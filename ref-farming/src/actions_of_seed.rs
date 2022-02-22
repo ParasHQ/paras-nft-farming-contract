@@ -9,7 +9,7 @@ use crate::farm_seed::SeedType;
 use crate::*;
 use crate::farmer::SeedUnstake;
 use crate::simple_farm::{NFTTokenId, ContractNFTTokenId};
-use crate::utils::{NFT_DELIMETER, NUM_EPOCHS_TO_UNLOCK};
+use crate::utils::{NFT_DELIMETER, BLOCK_TIMESTAMP_TO_UNLOCK};
 
 #[near_bindgen]
 impl Contract {
@@ -195,7 +195,7 @@ impl Contract {
                 let mut farmer = self.get_farmer(&sender_id);
                 farmer.get_ref_mut().seeds_unstake.insert(seed_id, SeedUnstake {
                     unstake_balance: amount,
-                    unstaked_available_epoch_height: env::epoch_height()
+                    unstaked_available_block_timestamp: env::block_timestamp(),
                 });
                 self.data_mut().farmers.insert(&sender_id, &farmer);
             },
@@ -243,7 +243,7 @@ impl Contract {
                 let mut farmer = self.get_farmer(&sender_id);
                 farmer.get_ref_mut().seeds_unstake.insert(seed_id, SeedUnstake {
                     unstake_balance: amount,
-                    unstaked_available_epoch_height: env::epoch_height()
+                    unstaked_available_block_timestamp: env::block_timestamp(),
                 });
                 self.data_mut().farmers.insert(&sender_id, &farmer);
             },
@@ -332,11 +332,11 @@ impl Contract {
 
         if let Some(seed_unstake) = farmer.get_ref_mut().seeds_unstake.get(seed_id) {
             let unstake_balance= seed_unstake.unstake_balance;
-            let current_epoch = env::epoch_height();
-            if seed_unstake.unstaked_available_epoch_height > current_epoch {
-                panic!("Still waiting for epoch, current epoch: {}, unstake_epoch: {}",
-                    current_epoch,
-                    seed_unstake.unstaked_available_epoch_height
+            let current_block_timestamp = env::block_timestamp();
+            if seed_unstake.unstaked_available_block_timestamp > current_block_timestamp {
+                panic!("Still waiting for block timestamp, current timestamp: {}, unstake_block_timestamp: {}",
+                    current_block_timestamp,
+                    seed_unstake.unstaked_available_block_timestamp
                 );
             } else {
                 farmer.get_ref_mut().seeds_unstake.remove(seed_id);
@@ -377,12 +377,12 @@ impl Contract {
         if let Some(seed_unstake) = farmer_mut.seeds_unstake.get(seed_id) {
             farmer_mut.seeds_unstake.insert(seed_id.into(), SeedUnstake {
                 unstake_balance: seed_unstake.unstake_balance + amount,
-                unstaked_available_epoch_height: env::epoch_height() + NUM_EPOCHS_TO_UNLOCK
+                unstaked_available_block_timestamp: env::block_timestamp() + BLOCK_TIMESTAMP_TO_UNLOCK
             });
         } else {
             farmer_mut.seeds_unstake.insert(seed_id.into(), SeedUnstake {
                 unstake_balance: amount,
-                unstaked_available_epoch_height: env::epoch_height() + NUM_EPOCHS_TO_UNLOCK
+                unstaked_available_block_timestamp: env::block_timestamp() + BLOCK_TIMESTAMP_TO_UNLOCK
             });
         }
 

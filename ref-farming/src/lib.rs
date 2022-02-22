@@ -217,7 +217,7 @@ mod tests {
         contract.ft_on_transfer(farmer, U128(amount), String::from(""));
     }    
 
-    fn withdraw_seed(
+    fn unstake_seed(
         context: &mut VMContextBuilder,
         contract: &mut Contract,
         farmer: ValidAccountId,
@@ -230,7 +230,7 @@ mod tests {
             .block_timestamp(to_nano(time_stamp))
             .attached_deposit(1)
             .build());
-        contract.withdraw_seed(accounts(1).into());
+        contract.unstake_seed(accounts(1).into(), amount.into());
     } 
 
     fn claim_reward(
@@ -365,8 +365,8 @@ mod tests {
 
         // remove all seeds at round 5
         println!("----> remove all seeds at round 5");
-        withdraw_seed(&mut context, &mut contract, accounts(0), 360, 10);
-        withdraw_seed(&mut context, &mut contract, accounts(3), 370, 10);
+        unstake_seed(&mut context, &mut contract, accounts(0), 360, 10);
+        unstake_seed(&mut context, &mut contract, accounts(3), 370, 10);
         testing_env!(context.predecessor_account_id(accounts(0))
             .block_timestamp(to_nano(380)).is_view(true).build());
         let unclaimed = contract.get_unclaimed_reward(accounts(0), farm_id.clone());
@@ -481,8 +481,8 @@ mod tests {
 
         // withdraw seed
         println!("----> accounts(0) and accounts(3) withdraw seed");
-        withdraw_seed(&mut context, &mut contract, accounts(0), 800, 10);
-        withdraw_seed(&mut context, &mut contract, accounts(3), 810, 10);
+        unstake_seed(&mut context, &mut contract, accounts(0), 800, 10);
+        unstake_seed(&mut context, &mut contract, accounts(3), 810, 10);
         testing_env!(context.predecessor_account_id(accounts(0))
             .block_timestamp(to_nano(820)).is_view(true).build());
         let rewarded = contract.get_reward(accounts(0), accounts(2));
@@ -579,7 +579,7 @@ mod tests {
         assert_eq!(farm_info.unclaimed_reward.0, to_yocto("0.5"));
 
         // farmer1 unstake half lpt at round 5
-        withdraw_seed(&mut context, &mut contract, accounts(0), 360, to_yocto("0.4"));
+        unstake_seed(&mut context, &mut contract, accounts(0), 360, to_yocto("0.4"));
         let unclaimed = contract.get_unclaimed_reward(accounts(0), farm_id.clone());
         assert_eq!(unclaimed.0, to_yocto("0"));
         let unclaimed = contract.get_unclaimed_reward(accounts(3), farm_id.clone());
@@ -591,7 +591,7 @@ mod tests {
         assert_eq!(farm_info.unclaimed_reward.0, to_yocto("0.5"));
 
         // farmer2 unstake all his lpt at round 6
-        withdraw_seed(&mut context, &mut contract, accounts(3), 410, to_yocto("1"));
+        unstake_seed(&mut context, &mut contract, accounts(3), 410, to_yocto("1"));
         let unclaimed = contract.get_unclaimed_reward(accounts(0), farm_id.clone());
         assert_eq!(unclaimed.0, to_yocto("0.375"));
         let unclaimed = contract.get_unclaimed_reward(accounts(3), farm_id.clone());
@@ -617,7 +617,7 @@ mod tests {
         assert_eq!(farm_info.last_round, 6);
         assert_eq!(farm_info.claimed_reward.0, to_yocto("5.625"));
         assert_eq!(farm_info.unclaimed_reward.0, to_yocto("1.375"));
-        withdraw_seed(&mut context, &mut contract, accounts(0), 470, to_yocto("0.6"));
+        unstake_seed(&mut context, &mut contract, accounts(0), 470, to_yocto("0.6"));
         let unclaimed = contract.get_unclaimed_reward(accounts(0), farm_id.clone());
         assert_eq!(unclaimed.0, to_yocto("0"));
         let unclaimed = contract.get_unclaimed_reward(accounts(3), farm_id.clone());

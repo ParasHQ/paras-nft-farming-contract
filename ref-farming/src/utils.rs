@@ -20,7 +20,7 @@ pub const MFT_TAG: &str = "@";
 pub const FT_INDEX_TAG: &str = "$";
 pub const NFT_DELIMETER: &str = "@";
 pub const PARAS_SERIES_DELIMETER: &str = ":";
-pub const NUM_EPOCHS_TO_UNLOCK: EpochHeight = 2;
+pub const BLOCK_TIMESTAMP_TO_UNLOCK: Timestamp = 86400000000000; // 24 hours
 
 
 construct_uint! {
