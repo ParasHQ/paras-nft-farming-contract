@@ -12,6 +12,7 @@ use crate::simple_farm::{DENOM};
 use crate::*;
 
 use uint::construct_uint;
+use crate::farmer::SeedUnstake;
 
 construct_uint! {
     /// 256-bit unsigned integer.
@@ -311,6 +312,15 @@ impl Contract {
             }
         } else {
             panic!("Unstake not found");
+        }
+    }
+
+    pub fn get_user_seed_unstaked(&self, account_id: ValidAccountId, seed_id: SeedId) -> SeedUnstake {
+        let farmer = self.get_farmer(account_id.as_ref());
+        let seed_unstake = farmer.get_ref().seeds_unstake.get(&seed_id).unwrap();
+        SeedUnstake {
+            unstake_balance: seed_unstake.unstake_balance,
+            unstaked_available_epoch_height: seed_unstake.unstaked_available_epoch_height
         }
     }
 

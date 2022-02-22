@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::{env, AccountId, Balance, EpochHeight};
 use crate::{SeedId, FarmId, RPS};
 use crate::simple_farm::{ContractNFTTokenId};
@@ -22,7 +23,8 @@ use near_sdk::collections::UnorderedSet;
 /// each empty hashmap cost 4 bytes
 pub const MIN_FARMER_LENGTH: u128 = MAX_ACCOUNT_LENGTH + 16 + 4 * 3;
 
-#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(BorshSerialize, BorshDeserialize, Serialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct SeedUnstake {
     pub unstaked_available_epoch_height: EpochHeight,
     pub unstake_balance: u128,
