@@ -230,7 +230,7 @@ mod tests {
             .block_timestamp(to_nano(time_stamp))
             .attached_deposit(1)
             .build());
-        contract.withdraw_seed(accounts(1).into(), U128(amount));
+        contract.withdraw_seed(accounts(1).into());
     } 
 
     fn claim_reward(

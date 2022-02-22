@@ -7,8 +7,9 @@ use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_toke
 use crate::errors::*;
 use crate::farm_seed::SeedType;
 use crate::*;
+use crate::farmer::SeedUnstake;
 use crate::simple_farm::{NFTTokenId, ContractNFTTokenId};
-use crate::utils::NFT_DELIMETER;
+use crate::utils::{NFT_DELIMETER, NUM_EPOCHS_TO_UNLOCK};
 
 #[near_bindgen]
 impl Contract {
@@ -42,15 +43,14 @@ impl Contract {
     }
 
     #[payable]
-    pub fn withdraw_seed(&mut self, seed_id: SeedId, amount: U128) {
+    pub fn withdraw_seed(&mut self, seed_id: SeedId) {
         assert_one_yocto();
         let sender_id = env::predecessor_account_id();
 
         let seed_contract_id: AccountId = seed_id.split(FT_INDEX_TAG).next().unwrap().to_string();
-        let amount: Balance = amount.into();
 
         // update inner state
-        let seed_type = self.internal_seed_withdraw(&seed_id, &sender_id, amount);
+        let (seed_type, amount) = self.internal_seed_withdraw(&seed_id, &sender_id);
 
         match seed_type {
             SeedType::FT => {
@@ -95,6 +95,20 @@ impl Contract {
                     ));
             }
         }
+    }
+
+    #[payable]
+    pub fn unstake_seed(&mut self, seed_id: SeedId, amount: U128) {
+        assert_one_yocto();
+        let sender_id = env::predecessor_account_id();
+
+        let amount: Balance = amount.into();
+
+        self.internal_seed_unstake(
+            &seed_id,
+            &sender_id,
+            amount
+        );
     }
 
     #[private]
@@ -177,13 +191,12 @@ impl Contract {
                 );
                 // revert withdraw, equal to deposit, claim reward to update user reward_per_seed
                 self.internal_claim_user_reward_by_seed_id(&sender_id, &seed_id);
-                // **** update seed (new version)
-                let mut farm_seed = self.get_seed(&seed_id);
-                farm_seed.get_ref_mut().add_amount(amount);
-                self.data_mut().seeds.insert(&seed_id, &farm_seed);
 
                 let mut farmer = self.get_farmer(&sender_id);
-                farmer.get_ref_mut().add_seed(&seed_id, amount);
+                farmer.get_ref_mut().seeds_unstake.insert(seed_id, SeedUnstake {
+                    unstake_balance: amount,
+                    unstaked_available_epoch_height: env::epoch_height()
+                });
                 self.data_mut().farmers.insert(&sender_id, &farmer);
             },
             PromiseResult::Successful(_) => {
@@ -226,12 +239,12 @@ impl Contract {
 
                 self.internal_claim_user_reward_by_seed_id(&sender_id, &seed_id);
                 // **** update seed (new version)
-                let mut farm_seed = self.get_seed(&seed_id);
-                farm_seed.get_ref_mut().add_amount(amount);
-                self.data_mut().seeds.insert(&seed_id, &farm_seed);
 
                 let mut farmer = self.get_farmer(&sender_id);
-                farmer.get_ref_mut().add_seed(&seed_id, amount);
+                farmer.get_ref_mut().seeds_unstake.insert(seed_id, SeedUnstake {
+                    unstake_balance: amount,
+                    unstaked_available_epoch_height: env::epoch_height()
+                });
                 self.data_mut().farmers.insert(&sender_id, &farmer);
             },
             PromiseResult::Successful(_) => {
@@ -310,12 +323,39 @@ impl Contract {
 
     fn internal_seed_withdraw(
         &mut self, 
-        seed_id: &SeedId, 
-        sender_id: &AccountId, 
-        amount: Balance) -> SeedType {
+        seed_id: &SeedId,
+        sender_id: &AccountId,
+    ) -> (SeedType, Balance) {
 
-        // first claim all reward of the user for this seed farms
-        // to update user reward_per_seed in each farm
+        let farm_seed = self.get_seed(seed_id);
+        let mut farmer = self.get_farmer(sender_id);
+
+        if let Some(seed_unstake) = farmer.get_ref_mut().seeds_unstake.get(seed_id) {
+            let unstake_balance= seed_unstake.unstake_balance;
+            let current_epoch = env::epoch_height();
+            if seed_unstake.unstaked_available_epoch_height > current_epoch {
+                panic!("Still waiting for epoch, current epoch: {}, unstake_epoch: {}",
+                    current_epoch,
+                    seed_unstake.unstaked_available_epoch_height
+                );
+            } else {
+                farmer.get_ref_mut().seeds_unstake.remove(seed_id);
+                self.data_mut().farmers.insert(&sender_id, &farmer);
+
+                return (farm_seed.get_ref().seed_type.clone(), unstake_balance);
+            }
+        } else {
+            panic!("Unstake data not found");
+        }
+    }
+
+    fn internal_seed_unstake(
+        &mut self,
+        seed_id: &SeedId,
+        sender_id: &AccountId,
+        amount: Balance
+    ) -> SeedType {
+
         self.internal_claim_user_reward_by_seed_id(sender_id, seed_id);
 
         let mut farm_seed = self.get_seed(seed_id);
@@ -331,9 +371,25 @@ impl Contract {
                 farmer.get_ref_mut().remove_rps(farm_id);
             }
         }
+
+        let mut farmer_mut = farmer.get_ref_mut();
+
+        if let Some(seed_unstake) = farmer_mut.seeds_unstake.get(seed_id) {
+            farmer_mut.seeds_unstake.insert(seed_id.into(), SeedUnstake {
+                unstake_balance: seed_unstake.unstake_balance + amount,
+                unstaked_available_epoch_height: env::epoch_height() + NUM_EPOCHS_TO_UNLOCK
+            });
+        } else {
+            farmer_mut.seeds_unstake.insert(seed_id.into(), SeedUnstake {
+                unstake_balance: amount,
+                unstaked_available_epoch_height: env::epoch_height() + NUM_EPOCHS_TO_UNLOCK
+            });
+        }
+
         self.data_mut().farmers.insert(sender_id, &farmer);
         self.data_mut().seeds.insert(seed_id, &farm_seed);
 
+        // withdraw rewards
         let mut reward_tokens: Vec<AccountId> = vec![];
         for farm_id in farm_seed.get_ref().farms.iter() {
             let reward_token = self.data().farms.get(farm_id).unwrap().get_reward_token();

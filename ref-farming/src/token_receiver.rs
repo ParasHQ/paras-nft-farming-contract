@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::farm_seed::SeedType;
-use crate::utils::{MFT_TAG, FT_INDEX_TAG};
+use crate::utils::{MFT_TAG};
 use crate::*;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};

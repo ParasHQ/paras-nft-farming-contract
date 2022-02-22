@@ -1,6 +1,6 @@
 
 use near_sdk::json_types::{U128};
-use near_sdk::{Balance, env, ext_contract, Gas, Timestamp};
+use near_sdk::{Balance, env, EpochHeight, ext_contract, Gas, Timestamp};
 use uint::construct_uint;
 use crate::{SeedId, FarmId};
 use crate::errors::*;
@@ -20,6 +20,7 @@ pub const MFT_TAG: &str = "@";
 pub const FT_INDEX_TAG: &str = "$";
 pub const NFT_DELIMETER: &str = "@";
 pub const PARAS_SERIES_DELIMETER: &str = ":";
+pub const NUM_EPOCHS_TO_UNLOCK: EpochHeight = 2;
 
 
 construct_uint! {

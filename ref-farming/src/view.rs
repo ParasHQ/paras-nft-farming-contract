@@ -301,5 +301,18 @@ impl Contract {
         }
     }
 
+    pub fn is_user_seed_available_to_withdraw(&self, account_id: ValidAccountId, seed_id: SeedId) -> bool {
+        let farmer = self.get_farmer(account_id.as_ref());
+        if let Some(seeds_unstake) = farmer.get_ref().seeds_unstake.get(&seed_id) {
+            if seeds_unstake.unstaked_available_epoch_height <= env::epoch_height() {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            panic!("Unstake not found");
+        }
+    }
+
 
 }
