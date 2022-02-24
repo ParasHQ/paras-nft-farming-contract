@@ -30,6 +30,23 @@ pub struct SeedUnstake {
     pub unstake_balance: u128,
 }
 
+#[derive(BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "test", derive(Clone))]
+pub struct FarmerV1 {
+    pub farmer_id: AccountId,
+    /// Native NEAR amount sent to this contract.
+    /// Used for storage.
+    pub amount: Balance,
+    /// Amounts of various reward tokens the farmer claimed.
+    pub rewards: HashMap<AccountId, Balance>,
+    /// Amounts of various seed tokens the farmer staked.
+    pub seeds: HashMap<SeedId, Balance>,
+    /// record user_last_rps of farms
+    pub user_rps: LookupMap<FarmId, RPS>,
+    pub rps_count: u32,
+    pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
+}
+
 /// Account deposits information and storage cost.
 #[derive(BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "test", derive(Clone))]
@@ -159,13 +176,14 @@ impl Farmer {
 /// each function of this enum should be carefully re-code!
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedFarmer {
-    V101(Farmer),
+    V101(FarmerV1),
+    V102(Farmer),
 }
 
 impl VersionedFarmer {
 
     pub fn new(farmer_id: AccountId, amount: Balance) -> Self {
-        VersionedFarmer::V101(Farmer {
+        VersionedFarmer::V102(Farmer {
             farmer_id: farmer_id.clone(),
             amount: amount,
             rewards: HashMap::new(),
@@ -182,7 +200,17 @@ impl VersionedFarmer {
     /// Upgrades from other versions to the currently used version.
     pub fn upgrade(self) -> Self {
         match self {
-            VersionedFarmer::V101(farmer) => VersionedFarmer::V101(farmer),
+            VersionedFarmer::V102(farmer) => VersionedFarmer::V102(farmer),
+            VersionedFarmer::V101(farmer) => VersionedFarmer::V102(Farmer {
+                farmer_id: farmer.farmer_id,
+                amount: farmer.amount,
+                rewards: farmer.rewards,
+                seeds: farmer.seeds,
+                user_rps: farmer.user_rps,
+                rps_count: farmer.rps_count,
+                nft_seeds: farmer.nft_seeds,
+                seeds_unstake: HashMap::new()
+            }),
         }
     }
 
@@ -190,7 +218,8 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn need_upgrade(&self) -> bool {
         match self {
-            VersionedFarmer::V101(_) => false,
+            VersionedFarmer::V102(_) => false,
+            VersionedFarmer::V101(_) => true,
             _ => true,
         }
     }
@@ -199,7 +228,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get_ref(&self) -> &Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
@@ -208,7 +237,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get(self) -> Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
@@ -217,7 +246,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get_ref_mut(&mut self) -> &mut Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
