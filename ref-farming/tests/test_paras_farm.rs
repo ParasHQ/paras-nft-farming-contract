@@ -213,7 +213,7 @@ fn single_paras_farm() {
     assert_eq!(unclaim.0, to_yocto("0.5"));
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("0.4").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("0.4").into()),
         deposit = 1
     );
     out_come.assert_success();
@@ -245,7 +245,7 @@ fn single_paras_farm() {
     assert_eq!(unclaim.0, to_yocto("1.125"));
     let out_come = call!(
         farmer2,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("1").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("1").into()),
         deposit = 1
     );
     out_come.assert_success();
@@ -277,7 +277,7 @@ fn single_paras_farm() {
     assert_eq!(unclaim.0, to_yocto("0"));
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("0.6").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("0.6").into()),
         deposit = 1
     );
     out_come.assert_success();

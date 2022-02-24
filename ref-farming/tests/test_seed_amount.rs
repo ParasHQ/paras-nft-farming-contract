@@ -72,7 +72,7 @@ fn seed_amount_little() {
     out_come.assert_success();
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("0.999999999999999999999999").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("0.999999999999999999999999").into()),
         deposit = 1
     );
     out_come.assert_success();

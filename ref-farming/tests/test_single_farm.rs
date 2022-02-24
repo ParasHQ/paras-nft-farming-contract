@@ -63,10 +63,10 @@ fn single_farm_startat_0() {
         deposit = to_yocto("1")
     )
     .assert_success();
-    mint_token(&token1, &root, to_yocto("10"));
+    mint_token(&token1, &root, to_yocto("100000"));
     call!(
         root,
-        token1.ft_transfer_call(to_va(farming_id()), U128(to_yocto("10")), None, farm_id.clone()),
+        token1.ft_transfer_call(to_va(farming_id()), U128(to_yocto("100000")), None, farm_id.clone()),
         deposit = 1
     )
     .assert_success();
@@ -97,7 +97,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 0, 0, 0, 0, 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 0, 0, 0, 0, 0);
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
     assert_eq!(user_seeds.get(&String::from("swap@0")).unwrap().0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
@@ -109,7 +109,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 1, 0, 0, to_yocto("1"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 1, 0, 0, to_yocto("1"), 0);
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
     assert_eq!(user_seeds.get(&String::from("swap@0")).unwrap().0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
@@ -136,7 +136,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 1, 1, 0, to_yocto("1"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 1, 1, 0, to_yocto("1"), 0);
     let user_seeds = show_userseeds(&farming, farmer2.account_id(), false);
     assert_eq!(user_seeds.get(&String::from("swap@0")).unwrap().0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -148,7 +148,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 2, 1, 0, to_yocto("2"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 2, 1, 0, to_yocto("2"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("1.5"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -160,7 +160,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 3, 1, 0, to_yocto("3"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 3, 1, 0, to_yocto("3"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("2"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -173,7 +173,7 @@ fn single_farm_startat_0() {
     out_come.assert_success();
     // println!("{:#?}", out_come.promise_results());
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 3, 3, to_yocto("2"), to_yocto("1"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 3, 3, to_yocto("2"), to_yocto("1"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, 0_u128);
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -190,7 +190,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 4, 3, to_yocto("2"), to_yocto("2"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 4, 3, to_yocto("2"), to_yocto("2"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0.5"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -203,7 +203,7 @@ fn single_farm_startat_0() {
     out_come.assert_success();
     // println!("{:#?}", out_come.promise_results());
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 4, 4, to_yocto("3.5"), to_yocto("0.5"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 4, 4, to_yocto("3.5"), to_yocto("0.5"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0.5"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -220,20 +220,20 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 5, 4, to_yocto("3.5"), to_yocto("1.5"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 5, 4, to_yocto("3.5"), to_yocto("1.5"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0.5"));
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("0.4").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("0.4").into()),
         deposit = 1
     );
     out_come.assert_success();
     // println!("{:#?}", out_come.promise_results());
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 5, 5, to_yocto("4.5"), to_yocto("0.5"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 5, 5, to_yocto("4.5"), to_yocto("0.5"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -252,20 +252,20 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 6, 5, to_yocto("4.5"), to_yocto("1.5"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 6, 5, to_yocto("4.5"), to_yocto("1.5"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0.375"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("1.125"));
     let out_come = call!(
         farmer2,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("1").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("1").into()),
         deposit = 1
     );
     out_come.assert_success();
     // println!("{:#?}", out_come.promise_results());
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 6, 6, to_yocto("5.625"), to_yocto("0.375"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 6, 6, to_yocto("5.625"), to_yocto("0.375"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0.375"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -284,20 +284,20 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 7, 6, to_yocto("5.625"), to_yocto("1.375"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 7, 6, to_yocto("5.625"), to_yocto("1.375"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("1.374999999999999999999999"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0"));
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(farm_info.seed_id.clone(), to_yocto("0.6").into()),
+        farming.unstake_seed(farm_info.seed_id.clone(), to_yocto("0.6").into()),
         deposit = 1
     );
     out_come.assert_success();
     // println!("{:#?}", out_come.promise_results());
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 7, 7, to_yocto("6.999999999999999999999999"), 1, 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 7, 7, to_yocto("6.999999999999999999999999"), 1, 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -310,13 +310,29 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
 
+    println!("----->> move to 24 hours later and farmer1 and farmer 2 withdraw lpt.");
+    assert!(root.borrow_runtime_mut().produce_blocks(86400).is_ok());
+    let out_come = call!(
+        farmer1,
+        farming.withdraw_seed(farm_info.seed_id.clone()),
+        deposit = 1
+    );
+    out_come.assert_success();
+
+    let out_come = call!(
+        farmer2,
+        farming.withdraw_seed(farm_info.seed_id.clone()),
+        deposit = 1
+    );
+    out_come.assert_success();
+
     println!("----->> move to 60 secs later and farmer1 restake lpt.");
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
     println!("        Chain goes 60 blocks, now #{}, ts:{}.", 
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 8, 7, to_yocto("6.999999999999999999999999"), 1 + to_yocto("1"), 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 1448, 7, to_yocto("6.999999999999999999999999"), 1 + to_yocto("1441"), 0);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -339,7 +355,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 8, 8, to_yocto("8"), to_yocto("0"), to_yocto("1") + 1);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 1448, 1448, to_yocto("1448"), to_yocto("0"), to_yocto("1441") + 1);
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
     assert_eq!(user_seeds.get(&String::from("swap@0")).unwrap().0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
@@ -356,11 +372,11 @@ fn single_farm_startat_0() {
 
     println!("----->> move to 40 secs later and farmer2 restake lpt.");
     assert!(root.borrow_runtime_mut().produce_blocks(40).is_ok());
-    println!("        Chain goes 40 blocks, now #{}, ts:{}.", 
+    println!("        Chain goes 40 blocks, now #{}, ts:{}.",
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 9, 8, to_yocto("8"), to_yocto("1"), to_yocto("1") + 1);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 1449, 1448, to_yocto("1448"), to_yocto("1"), to_yocto("1441") + 1);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
@@ -383,7 +399,7 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 9, 9, to_yocto("8"), to_yocto("1"), to_yocto("1") + 1);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("100000"), 1449, 1449, to_yocto("1448"), to_yocto("1"), to_yocto("1441") + 1);
     let user_seeds = show_userseeds(&farming, farmer2.account_id(), false);
     assert_eq!(user_seeds.get(&String::from("swap@0")).unwrap().0, to_yocto("1"));
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
@@ -391,17 +407,19 @@ fn single_farm_startat_0() {
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("0"));
 
-    println!("----->> move to 60 secs later.");
-    assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
-    println!("<<----- Chain goes 60 blocks, now #{}, ts:{}.", 
+    // println!("----->> move to 5998552 secs later.");
+    // assert!(root.borrow_runtime_mut().produce_blocks(5998552).is_ok());
+    root.borrow_runtime_mut().cur_block.block_timestamp = 7000000000000000;
+
+    println!("<<----- Chain skip to 7000000s, now #{}, ts:{}.",
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Ended".to_string(), to_yocto("10"), 10, 9, to_yocto("8"), to_yocto("2"), to_yocto("1") + 1);
+    assert_farming(&farm_info, "Ended".to_string(), to_yocto("100000"), 100000, 1449, to_yocto("1448"), to_yocto("98552"), to_yocto("1441") + 1);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
-    assert_eq!(unclaim.0, to_yocto("1.5"));
+    assert_eq!(unclaim.0, to_yocto("49276.5"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
-    assert_eq!(unclaim.0, to_yocto("0.5"));
+    assert_eq!(unclaim.0, to_yocto("49275.5"));
 
     println!("----->> move to 60 secs later, and force remove farm");
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
@@ -409,11 +427,11 @@ fn single_farm_startat_0() {
     root.borrow_runtime().current_block().block_height, 
     root.borrow_runtime().current_block().block_timestamp);
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Ended".to_string(), to_yocto("10"), 10, 9, to_yocto("8"), to_yocto("2"), to_yocto("1") + 1);
+    assert_farming(&farm_info, "Ended".to_string(), to_yocto("100000"), 100000, 1449, to_yocto("1448"), to_yocto("98552"), to_yocto("1441") + 1);
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
-    assert_eq!(unclaim.0, to_yocto("1.5"));
+    assert_eq!(unclaim.0, to_yocto("49276.5"));
     let unclaim = show_unclaim(&farming, farmer2.account_id(), farm_id.clone(), false);
-    assert_eq!(unclaim.0, to_yocto("0.5"));
+    assert_eq!(unclaim.0, to_yocto("49275.5"));
     let out_come = call!(
         owner,
         farming.force_clean_farm(farm_id.clone()),
@@ -424,7 +442,7 @@ fn single_farm_startat_0() {
     assert_eq!(view!(farming.get_number_of_farms()).unwrap_json::<u64>(), 0);
     assert_eq!(view!(farming.get_number_of_outdated_farms()).unwrap_json::<u64>(), 1);
     let farm_info = show_outdated_farminfo(&farming, farm_id.clone(), true);
-    assert_farming(&farm_info, "Cleared".to_string(), to_yocto("10"), 10, 10, to_yocto("10"), to_yocto("0"), to_yocto("3") + 1);
+    assert_farming(&farm_info, "Cleared".to_string(), to_yocto("100000"), 100000, 100000, to_yocto("100000"), to_yocto("0"), to_yocto("99993") + 1);
 }
 
 

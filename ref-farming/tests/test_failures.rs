@@ -83,7 +83,7 @@ fn failure_e10_unstake_before_register() {
 
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed("swap@0".to_string(), to_yocto("0.6").into()),
+        farming.unstake_seed("swap@0".to_string(), to_yocto("0.6").into()),
         deposit = 1
     );
     assert!(!out_come.is_ok());
@@ -675,7 +675,16 @@ fn failure_e25_withdraw_seed_ft() {
 
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(token2.account_id(), U128(100)),
+        farming.unstake_seed(token2.account_id(), U128(100)),
+        deposit = 1
+    );
+    out_come.assert_success();
+
+    root.borrow_runtime_mut().cur_block.block_timestamp += 86400000000000;
+
+    let out_come = call!(
+        farmer1,
+        farming.withdraw_seed(token2.account_id()),
         deposit = 1
     );
     out_come.assert_success();
@@ -684,7 +693,7 @@ fn failure_e25_withdraw_seed_ft() {
     assert!(ex_status.contains("The account farmer1 is not registered"));
 
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
-    assert_eq!(user_seeds.get(&format!("{}", token2.account_id())).unwrap().0, 500);
+    assert_eq!(user_seeds.get(&format!("{}", token2.account_id())).unwrap().0, 400);
 }
 
 #[test]
@@ -731,7 +740,7 @@ fn failure_e31_unstake_seed() {
 
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(format!("{}@1", pool.account_id()), to_yocto("0.5").into()),
+        farming.unstake_seed(format!("{}@1", pool.account_id()), to_yocto("0.5").into()),
         deposit = 1
     );
     assert!(!out_come.is_ok());
@@ -813,7 +822,7 @@ fn failure_e32_unstake_over_balance() {
     out_come.assert_success();
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed("swap@0".to_string(), to_yocto("0.6").into()),
+        farming.unstake_seed("swap@0".to_string(), to_yocto("0.6").into()),
         deposit = 1
     );
     assert!(!out_come.is_ok());

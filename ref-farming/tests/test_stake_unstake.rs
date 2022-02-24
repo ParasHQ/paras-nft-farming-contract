@@ -21,9 +21,9 @@ fn lpt_stake_unstake() {
 
     let (pool, token1, _) = prepair_pool_and_liquidity(&root, &owner, farming_id(), vec![&farmer1]);
 
-    let (farming, farm_id) = prepair_farm(&root, &owner, &token1, to_yocto("500"));
+    let (farming, farm_id) = prepair_farm(&root, &owner, &token1, to_yocto("50000"));
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("500"), 0, 0, 0, 0, 0);
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("50000"), 0, 0, 0, 0, 0);
 
     call!(farmer1, farming.storage_deposit(None, None), deposit = to_yocto("1"))
     .assert_success();
@@ -48,12 +48,20 @@ fn lpt_stake_unstake() {
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(format!("{}@0", swap()), to_yocto("1").into()),
+        farming.unstake_seed(format!("{}@0", swap()), to_yocto("1").into()),
         deposit = 1
     );
     out_come.assert_success();
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
     assert!(user_seeds.get(&String::from("swap@0")).is_none());
+
+    println!("----->> move to 24 hours later and farmer1 withdraw lpt.");
+    assert!(root.borrow_runtime_mut().produce_blocks(86400).is_ok());
+    let out_come = call!(
+        farmer1,
+        farming.withdraw_seed(farm_info.seed_id.clone()),
+        deposit = 1
+    );
     
     assert!(root.borrow_runtime_mut().produce_blocks(120).is_ok());
     let out_come = farmer1.call(
@@ -94,7 +102,7 @@ fn lpt_stake_unstake() {
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(format!("{}@0", swap()), to_yocto("0.5").into()),
+        farming.unstake_seed(format!("{}@0", swap()), to_yocto("0.5").into()),
         deposit = 1
     );
     out_come.assert_success();
@@ -104,12 +112,20 @@ fn lpt_stake_unstake() {
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
     let out_come = call!(
         farmer1,
-        farming.withdraw_seed(format!("{}@0", swap()), to_yocto("0.5").into()),
+        farming.unstake_seed(format!("{}@0", swap()), to_yocto("0.5").into()),
         deposit = 1
     );
     out_come.assert_success();
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
     assert!(user_seeds.get(&String::from("swap@0")).is_none());
+
+    println!("----->> move to 24 hours later and farmer1 withdraw lpt.");
+    assert!(root.borrow_runtime_mut().produce_blocks(86400).is_ok());
+    let out_come = call!(
+        farmer1,
+        farming.withdraw_seed(farm_info.seed_id.clone()),
+        deposit = 1
+    );
 
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
 
@@ -132,7 +148,7 @@ fn lpt_stake_unstake() {
     
     assert!(root.borrow_runtime_mut().produce_blocks(60).is_ok());
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("500"), 8, 7, to_yocto("7"), to_yocto("1"), to_yocto("3"));
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("50000"), 2888, 2887, to_yocto("2887"), to_yocto("1"), to_yocto("2883"));
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, to_yocto("1"));
     let out_come = call!(
@@ -142,7 +158,7 @@ fn lpt_stake_unstake() {
     );
     out_come.assert_success();
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
-    assert_farming(&farm_info, "Running".to_string(), to_yocto("500"), 8, 8, to_yocto("8"), 0, to_yocto("3"));
+    assert_farming(&farm_info, "Running".to_string(), to_yocto("50000"), 2888, 2888, to_yocto("2888"), 0, to_yocto("2883"));
     let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     assert_eq!(unclaim.0, 0_u128);
 }
