@@ -131,7 +131,7 @@ pub fn get_nft_balance_equivalent(
 ) -> Option<Balance> {
     // split x.paras.near@1:1
     // to "x.paras.near@1", ":1"
-    return if let Some(nft_balance) = &seed.nft_balance {
+    return if let Some(nft_balance) = &seed.nft_balance_lookup {
         if let Some(nft_balance_equivalent) = nft_balance.get(&nft_staked.to_string()) {
             Some(nft_balance_equivalent.0)
         } else {

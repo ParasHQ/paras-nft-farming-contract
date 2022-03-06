@@ -491,7 +491,7 @@ fn test_farm_with_nft_mappings() {
     );
 
     out_come.assert_success();
-    // println!("{:?}", out_come.promise_results());
+    println!("{:?}", out_come.promise_results());
     println!("<<----- Farmer1 staked nft at #{}, ts:{}.",
              root.borrow_runtime().current_block().block_height,
              root.borrow_runtime().current_block().block_timestamp);
