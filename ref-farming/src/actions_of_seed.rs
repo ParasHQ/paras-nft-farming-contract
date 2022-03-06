@@ -13,6 +13,18 @@ use crate::utils::NFT_DELIMETER;
 #[near_bindgen]
 impl Contract {
 
+    pub fn force_upgrade_seed(&mut self, seed_id: SeedId) {
+        self.assert_owner();
+        self.get_seed(&seed_id);
+    }
+
+    pub fn upgrade_lookup_map(&mut self, seed_id: SeedId, start_from: u64, limit: u64){
+        self.assert_owner();
+        let mut seed = self.get_seed(&seed_id);
+        seed.upgrade_nft_balance_lookup(start_from, limit);
+        self.data_mut().seeds.insert(&seed_id, &seed);
+    }
+
     #[payable]
     pub fn withdraw_nft(&mut self, seed_id: SeedId, nft_contract_id: String, nft_token_id: NFTTokenId) {
         assert_one_yocto();
