@@ -81,11 +81,18 @@ impl FarmSeed {
     ) -> Self {
         let (token_id, token_index) = parse_seed_id(seed_id);
         let seed_type: SeedType;
-        let nft_balance_lookup: LookupMap<NFTTokenId, u128> = LookupMap::new( StorageKeys::NftBalanceSeed {
+        let mut nft_balance_lookup: LookupMap<NFTTokenId, u128> = LookupMap::new( StorageKeys::NftBalanceSeed {
             seed_id: seed_id.clone()
         });
         if nft_balance.is_some() {
             seed_type = SeedType::NFT;
+            nft_balance.as_ref().unwrap()
+                .iter()
+                .skip(0 as usize)
+                .take(100 as usize)
+                .for_each(|(nft_token_id, balance)| {
+                    nft_balance_lookup.insert(nft_token_id, &balance.0);
+                });
         } else if token_id == token_index {
             seed_type = SeedType::FT; // If NFT, then SeedId will indicate the balance equivalent instead of adding seed with FT
         } else {
@@ -143,9 +150,17 @@ impl VersionedFarmSeed {
         match self {
             VersionedFarmSeed::V102(farm_seed) => VersionedFarmSeed::V102(farm_seed),
             VersionedFarmSeed::V101(farm_seed) => {
-                let nft_balance_lookup: LookupMap<NFTTokenId, u128> = LookupMap::new( StorageKeys::NftBalanceSeed {
+                let mut nft_balance_lookup: LookupMap<NFTTokenId, u128> = LookupMap::new( StorageKeys::NftBalanceSeed {
                     seed_id: farm_seed.seed_id.clone()
                 });
+
+                farm_seed.nft_balance.as_ref().unwrap()
+                    .iter()
+                    .skip(0 as usize)
+                    .take(100 as usize)
+                    .for_each(|(nft_token_id, balance)| {
+                        nft_balance_lookup.insert(nft_token_id, &balance.0);
+                    });
 
                 return VersionedFarmSeed::V102(FarmSeed {
                     seed_id: farm_seed.seed_id,
@@ -159,23 +174,6 @@ impl VersionedFarmSeed {
                     metadata: farm_seed.metadata,
                 })
             }
-        }
-    }
-
-    pub fn upgrade_nft_balance_lookup(&mut self, start_from: u64, limit: u64) -> &mut FarmSeed {
-        match self {
-            VersionedFarmSeed::V102(farm_seed) => {
-                    farm_seed.nft_balance.as_ref().unwrap().clone()
-                        .iter()
-                        .skip(start_from as usize)
-                        .take(limit as usize)
-                        .for_each(|(nft_token_id, balance)| {
-                            farm_seed.nft_balance_lookup.insert(nft_token_id, &balance.0);
-                        });
-
-                farm_seed
-            },
-            _ => unimplemented!()
         }
     }
 

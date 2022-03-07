@@ -7,7 +7,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 
 use crate::farm_seed::SeedInfo;
-use crate::utils::parse_farm_id;
+use crate::utils::{parse_farm_id, PARAS_SERIES_DELIMETER};
 use crate::simple_farm::{DENOM};
 use crate::*;
 
@@ -299,6 +299,25 @@ impl Contract {
         } else {
             String::from("0")
         }
+    }
+
+    pub fn get_nft_balance_equivalent(&self, seed_id: SeedId, nft_token_id: String) -> Option<U128> {
+        let mut result: Option<U128> = None;
+        if let Some(seed) = self.get_seed_wrapped(&seed_id) {
+            if let Some(nft_balance_equivalent) = seed.get_ref().nft_balance_lookup.get(&nft_token_id) {
+                result = Some(U128(nft_balance_equivalent));
+            } else if nft_token_id.contains(PARAS_SERIES_DELIMETER) {
+                let contract_token_series_id_split: Vec<&str> = nft_token_id.split(PARAS_SERIES_DELIMETER).collect();
+                if let Some(nft_balance_equivalent) = seed.get_ref().nft_balance_lookup.get(&contract_token_series_id_split[0].to_string()) {
+                    result = Some(U128(nft_balance_equivalent));
+                } else {
+                    result = None;
+                }
+            } else {
+                result = None;
+            }
+        }
+        return result;
     }
 
 

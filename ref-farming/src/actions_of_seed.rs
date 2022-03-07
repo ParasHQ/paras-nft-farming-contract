@@ -9,19 +9,26 @@ use crate::farm_seed::SeedType;
 use crate::*;
 use crate::simple_farm::{NFTTokenId, ContractNFTTokenId};
 use crate::utils::NFT_DELIMETER;
+use std::collections::HashMap;
 
 #[near_bindgen]
 impl Contract {
 
     pub fn force_upgrade_seed(&mut self, seed_id: SeedId) {
         self.assert_owner();
-        self.get_seed(&seed_id);
+        let seed = self.get_seed(&seed_id);
+        self.data_mut().seeds.insert(&seed_id, &seed);
     }
 
-    pub fn upgrade_lookup_map(&mut self, seed_id: SeedId, start_from: u64, limit: u64){
+    pub fn upgrade_lookup_map(&mut self, seed_id: SeedId, nft_balance: HashMap<NFTTokenId, U128>){
         self.assert_owner();
         let mut seed = self.get_seed(&seed_id);
-        seed.upgrade_nft_balance_lookup(start_from, limit);
+        let mut seed_mut = seed.get_ref_mut();
+        for (nft_token_id, balance) in &nft_balance {
+            seed_mut.nft_balance_lookup.insert(&nft_token_id, &balance.0);
+        }
+        seed_mut.nft_balance.as_mut().unwrap().extend(nft_balance);
+
         self.data_mut().seeds.insert(&seed_id, &seed);
     }
 
