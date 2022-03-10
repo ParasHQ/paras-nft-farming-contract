@@ -38,7 +38,7 @@ fn test_upgrade_lookupmap() {
     let farm_id = "random.near".to_string();
     let mut nft_balance: HashMap<String, U128> = HashMap::new();
 
-    for i in 0..10000 {
+    for i in 0..2000 {
         nft_balance.insert(format!("{}@{}", "nft-contract", i.to_string()), U128(3000000000000000000000000));
     }
 
@@ -96,9 +96,9 @@ fn test_upgrade_lookupmap() {
 
     println!("nft-contract@1: {:#?}", nft_balance_1);
 
-    for i in 0..10000/200 {
+    for i in 0..2000/100 {
         let mut nft_balance: HashMap<String, U128> = HashMap::new();
-        for j in i..i+200 {
+        for j in i..i+100 {
             nft_balance.insert(format!("{}@{}", "nft-contract", j.to_string()), U128(3000000000000000000000000));
         }
 
