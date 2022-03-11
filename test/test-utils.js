@@ -7,6 +7,7 @@ const getConfig = require('./config');
 const {
 	networkId, 
     farmingContractName, nftContractName, ftContractName,
+    ownerAccountName,
     contractMethods, gas, nodeUrl, walletUrl,
 	DEFAULT_NEW_ACCOUNT_AMOUNT, 
 	DEFAULT_NEW_CONTRACT_AMOUNT,
@@ -28,6 +29,8 @@ const near = new nearAPI.Near({
 })
 
 const farmingContractAccount = new nearAPI.Account(near.connection, farmingContractName)
+const ownerAccount = new nearAPI.Account(near.connection, ownerAccountName)
+
 farmingContractAccount.addAccessKey = (publicKey) =>
 	farmingContractAccount.addKey(
 		publicKey,
@@ -49,7 +52,7 @@ const farmingContract = new nearAPI.Contract(
 )
 
 const nftContract = new nearAPI.Contract(
-    farmingContractAccount,
+    ownerAccount,
     nftContractName,
     {
       viewMethods: ["nft_token"],
@@ -58,11 +61,11 @@ const nftContract = new nearAPI.Contract(
 )
 
 const ftContract = new nearAPI.Contract(
-    farmingContractAccount,
+    ownerAccount,
     ftContractName,
     {
       viewMethods: ["ft_balance_of"],
-      changeMethods: ["ft_transfer", "ft_transfer_call"]
+      changeMethods: ["ft_transfer", "ft_transfer_call", "storage_deposit"]
     }
 )
 
@@ -153,6 +156,7 @@ module.exports = {
     farmingContract,
     nftContract,
     ftContract,
+    ownerAccount,
 	contractMethods,
 	initAccount,
 	createOrInitAccount,

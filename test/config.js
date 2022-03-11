@@ -1,6 +1,7 @@
 const farmingContractName = 'dev-1646919720417-64582228021469'
 const nftContractName = 'paras-token-v1.testnet'
 const ftContractName = 'dev-1631277489384-75412609538902'
+const ownerAccountName = 'orang.testnet'
 
 module.exports = function getConfig(network = 'mainnet') {
 	let config = {
@@ -10,7 +11,8 @@ module.exports = function getConfig(network = 'mainnet') {
 		helperUrl: "https://helper.testnet.near.org",
         farmingContractName: farmingContractName,
         nftContractName: nftContractName,
-        ftContractName: ftContractName
+        ftContractName: ftContractName,
+        ownerAccountName: ownerAccountName
 	}
 
 	switch (network) {
