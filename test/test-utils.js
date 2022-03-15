@@ -8,7 +8,7 @@ const {
 	networkId, 
     farmingContractName, nftContractName, ftContractName,
     ownerAccountName,
-    contractMethods, gas, nodeUrl, walletUrl,
+    contractMethods, gas, gas_max, nodeUrl, walletUrl,
 	DEFAULT_NEW_ACCOUNT_AMOUNT, 
 	DEFAULT_NEW_CONTRACT_AMOUNT,
 	GUESTS_ACCOUNT_SECRET,
@@ -46,7 +46,7 @@ const farmingContract = new nearAPI.Contract(
     farmingContractAccount,
     farmingContractName,
     {
-      viewMethods: ["get_seed_info", "list_user_seeds", "get_farm"],
+      viewMethods: ["get_seed_info", "list_user_seeds", "list_user_nft_seeds", "get_farm"],
       changeMethods: ["new", "create_simple_farm", "storage_deposit"]
     }
 )
@@ -146,6 +146,7 @@ async function createAccount(accountId, fundingAmount = DEFAULT_NEW_ACCOUNT_AMOU
 module.exports = { 
 	near,
 	gas,
+	gas_max,
 	keyStore,
 	getContract,
 	getAccountBalance,
@@ -153,6 +154,7 @@ module.exports = {
 	farmingContractName,
     nftContractName,
     ftContractName,
+	ownerAccountName,
     farmingContract,
     nftContract,
     ftContract,
