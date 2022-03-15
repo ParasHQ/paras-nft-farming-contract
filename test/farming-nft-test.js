@@ -40,6 +40,35 @@ describe('NFT Farming Contract', function () {
 		assert.notStrictEqual(state.code_hash, '11111111111111111111111111111111')
 	});
 
+    it('should be upgraded', async function () {
+        try {
+			await farmingContract.migrate({})
+		} catch (e) {
+            console.warn(e)
+		}
+    })
+
+    it('should force upgrade', async function () {
+        try {
+			await farmingContract.force_upgrade_seed({
+                args: {
+                    seed_id: ftContractName
+                },
+                gas: gas_max
+            })
+
+			await farmingContract.force_upgrade_seed({
+                args: {
+                    seed_id: `${nftContractName}-7777`
+                },
+                gas: gas_max
+            })
+		} catch (e) {
+            console.warn(e)
+		}
+    })
+    
+
     it('should create simple farm ft staking', async function () {
         try {
             const seed = await farmingContract.get_seed_info({
@@ -138,7 +167,7 @@ describe('NFT Farming Contract', function () {
                 }
 			},
             "300000000000000",
-            deposit = "3653030000000000000000000"
+            deposit = "4000000000000000000000000"
             );
 		} catch (e) {
             console.warn(e)
@@ -192,7 +221,7 @@ describe('NFT Farming Contract', function () {
                 {
                     args: {
                         receiver_id: farmingContractName,
-                        amount: "10000000000000000000",
+                        amount: "100000000000000000000",
                         msg: ""
                     },
                     gas: gas,
@@ -274,13 +303,15 @@ describe('NFT Farming Contract', function () {
     it('should nft unstake with gas_max', async function () {
         try {
             const token_id = "251:42"
+            const contractTokenId = `${nftContractName}@${token_id}`
             const seed_id = `${nftContractName}-7777`
 
             const user_nft_seeds = await farmingContract.list_user_nft_seeds({
                 account_id: ownerAccountName
             })
+            console.log(user_nft_seeds)
 
-            if (user_nft_seeds[seed_id] && !user_nft_seeds[seed_id].includes(token_id)) {
+            if (user_nft_seeds[seed_id] && !user_nft_seeds[seed_id].includes(contractTokenId)) {
                 throw Error('No NFT staked')
             }
 
@@ -333,13 +364,14 @@ describe('NFT Farming Contract', function () {
     it('should nft unstake', async function () {
         try {
             const token_id = "251:42"
+            const contractTokenId = `${nftContractName}@${token_id}`
             const seed_id = `${nftContractName}-7777`
 
             const user_nft_seeds = await farmingContract.list_user_nft_seeds({
                 account_id: ownerAccountName
             })
 
-            if (user_nft_seeds[seed_id] && !user_nft_seeds[seed_id].includes(token_id)) {
+            if (user_nft_seeds[seed_id] && !user_nft_seeds[seed_id].includes(contractTokenId)) {
                 throw Error('No NFT staked')
             }
 
@@ -359,53 +391,53 @@ describe('NFT Farming Contract', function () {
 		}
     });
 
-    it('should upgrade farm', async function () {
-        try {
-            const seed_id = `${nftContractName}-7777`
+    // it('should upgrade farm', async function () {
+    //     try {
+    //         const seed_id = `${nftContractName}-7777`
 
-            // upgrade
-            await farmingContract.force_upgrade_seed({
-                args: {
-                    seed_id: seed_id
-                },
-                gas: gas_max
-            })
+    //         // upgrade
+    //         await farmingContract.force_upgrade_seed({
+    //             args: {
+    //                 seed_id: seed_id
+    //             },
+    //             gas: gas_max
+    //         })
 
-            const seed_info = await farmingContract.get_seed_info({
-                seed_id: seed_id
-            })
-            console.log(seed_info)
-        } catch (e) {
-            console.warn(e)
-        }
-    });
+    //         const seed_info = await farmingContract.get_seed_info({
+    //             seed_id: seed_id
+    //         })
+    //         console.log(seed_info)
+    //     } catch (e) {
+    //         console.warn(e)
+    //     }
+    // });
 
-    it('should add more nft_balance', async function () {
-        // run after upgrade
-        try {
-            const seed_id = `${nftContractName}-7777`
-            let seed_info = await farmingContract.get_seed_info({seed_id: seed_id})
-            let nft_balance = seed_info.nft_balance
-            let nft_balance_keys = Object.keys(nft_balance)
-            let limit = 100
+    // it('should add more nft_balance', async function () {
+    //     // run after upgrade
+    //     try {
+    //         const seed_id = `${nftContractName}-7777`
+    //         let seed_info = await farmingContract.get_seed_info({seed_id: seed_id})
+    //         let nft_balance = seed_info.nft_balance
+    //         let nft_balance_keys = Object.keys(nft_balance)
+    //         let limit = 100
 
-            for (let i = 0; i < nft_balance_keys.length; i += limit) {
-                console.log(i)
-                let nft_balance_sample = {}
-                for (let j = i; j < i + limit; j++) {
-                    nft_balance_sample[nft_balance_keys[j]] = nft_balance[nft_balance_keys[j]]
-                }
+    //         for (let i = 0; i < nft_balance_keys.length; i += limit) {
+    //             console.log(i)
+    //             let nft_balance_sample = {}
+    //             for (let j = i; j < i + limit; j++) {
+    //                 nft_balance_sample[nft_balance_keys[j]] = nft_balance[nft_balance_keys[j]]
+    //             }
 
-                await farmingContract.upgrade_lookup_map({
-                    args: {
-                        seed_id: seed_id,
-                        nft_balance: nft_balance_sample
-                    },
-                    gas: gas_max
-                })
-            }
-        } catch (e) {
-            console.warn(e)
-        }
-    });
+    //             await farmingContract.upgrade_lookup_map({
+    //                 args: {
+    //                     seed_id: seed_id,
+    //                     nft_balance: nft_balance_sample
+    //                 },
+    //                 gas: gas_max
+    //             })
+    //         }
+    //     } catch (e) {
+    //         console.warn(e)
+    //     }
+    // });
 })

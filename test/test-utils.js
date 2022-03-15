@@ -37,7 +37,7 @@ farmingContractAccount.addAccessKey = (publicKey) =>
 		farmingContractName,
 		{
             viewMethods: ["get_seed_info", "list_user_seeds", "get_farm"],
-            changeMethods: ["new", "create_simple_farm", "storage_deposit", "force_upgrade_seed", "upgrade_lookup_map"]
+            changeMethods: ["new", "create_simple_farm", "storage_deposit", "force_upgrade_seed", "upgrade_lookup_map", "migrate"]
         },
 		parseNearAmount("0.1")
 	);
@@ -47,7 +47,7 @@ const farmingContract = new nearAPI.Contract(
     farmingContractName,
     {
       viewMethods: ["get_seed_info", "list_user_seeds", "list_user_nft_seeds", "get_farm"],
-      changeMethods: ["new", "create_simple_farm", "storage_deposit", "force_upgrade_seed", "upgrade_lookup_map"]
+      changeMethods: ["new", "create_simple_farm", "storage_deposit", "force_upgrade_seed", "upgrade_lookup_map", "migrate"]
     }
 )
 
