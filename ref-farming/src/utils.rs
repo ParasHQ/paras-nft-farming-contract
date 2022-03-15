@@ -141,7 +141,12 @@ pub fn get_nft_balance_equivalent(
         if let Some(nft_balance_equivalent) = seed.nft_balance_lookup.get(&contract_token_series_id_split[0].to_string()) {
             result = Some(nft_balance_equivalent);
         } else {
-            result = None;
+            let contract_token_series_id_split: Vec<&str> = nft_staked.split(NFT_DELIMETER).collect();
+            if let Some(nft_balance_equivalent) = seed.nft_balance_lookup.get(&contract_token_series_id_split[0].to_string()) {
+                result = Some(nft_balance_equivalent);
+            } else {
+                result = None;
+            }
         }
     } else {
         let contract_token_series_id_split: Vec<&str> = nft_staked.split(NFT_DELIMETER).collect();
@@ -161,7 +166,12 @@ pub fn get_nft_balance_equivalent(
                 if let Some(nft_balance_equivalent) = nft_balance.get(&contract_token_series_id_split[0].to_string()) {
                     result = Some(nft_balance_equivalent.0);
                 } else {
-                    result = None;
+                    let contract_token_series_id_split: Vec<&str> = nft_staked.split(NFT_DELIMETER).collect();
+                    if let Some(nft_balance_equivalent) = nft_balance.get(&contract_token_series_id_split[0].to_string()) {
+                        result = Some(nft_balance_equivalent.0);
+                    } else {
+                        result = None;
+                    }
                 }
             } else {
                 let contract_token_series_id_split: Vec<&str> = nft_staked.split(NFT_DELIMETER).collect();
