@@ -259,7 +259,7 @@ describe('NFT Farming Contract', function () {
                 {
                     args: {
                         receiver_id: farmingContractName,
-                        token_id: "251:42",
+                        token_id: token_id,
                         msg: seed_id
                     },
                     gas: gas_max,
@@ -318,7 +318,7 @@ describe('NFT Farming Contract', function () {
                 {
                     args: {
                         receiver_id: farmingContractName,
-                        token_id: "251:42",
+                        token_id: token_id,
                         msg: seed_id
                     },
                     gas: gas,
@@ -359,6 +359,53 @@ describe('NFT Farming Contract', function () {
 		}
     });
 
-    it('should upgrade farm', async function () {});
-    it('should add more nft_balance', async function () {});
+    it('should upgrade farm', async function () {
+        try {
+            const seed_id = `${nftContractName}-7777`
+
+            // upgrade
+            await farmingContract.force_upgrade_seed({
+                args: {
+                    seed_id: seed_id
+                },
+                gas: gas_max
+            })
+
+            const seed_info = await farmingContract.get_seed_info({
+                seed_id: seed_id
+            })
+            console.log(seed_info)
+        } catch (e) {
+            console.warn(e)
+        }
+    });
+
+    it('should add more nft_balance', async function () {
+        // run after upgrade
+        try {
+            const seed_id = `${nftContractName}-7777`
+            let seed_info = await farmingContract.get_seed_info({seed_id: seed_id})
+            let nft_balance = seed_info.nft_balance
+            let nft_balance_keys = Object.keys(nft_balance)
+            let limit = 100
+
+            for (let i = 0; i < nft_balance_keys.length; i += limit) {
+                console.log(i)
+                let nft_balance_sample = {}
+                for (let j = i; j < i + limit; j++) {
+                    nft_balance_sample[nft_balance_keys[j]] = nft_balance[nft_balance_keys[j]]
+                }
+
+                await farmingContract.upgrade_lookup_map({
+                    args: {
+                        seed_id: seed_id,
+                        nft_balance: nft_balance_sample
+                    },
+                    gas: gas_max
+                })
+            }
+        } catch (e) {
+            console.warn(e)
+        }
+    });
 })
