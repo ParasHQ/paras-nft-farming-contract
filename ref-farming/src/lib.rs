@@ -11,7 +11,7 @@ use near_sdk::BorshStorageKey;
 
 use crate::farm::{Farm, FarmId};
 use crate::simple_farm::{RPS};
-use crate::farm_seed::{VersionedFarmSeed, SeedId};
+use crate::farm_seed::{VersionedFarmSeed, SeedId, NftBalance};
 use crate::farmer::{VersionedFarmer, Farmer};
 
 // for simulator test
@@ -47,11 +47,11 @@ pub enum StorageKeys {
     RewardInfo,
     UserRps { account_id: AccountId },
     AccountSeedId { account_seed_id: String },
-    NftBalanceSeed { seed_id: SeedId }
+    NftBalanceSeed,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct ContractData {
+pub struct OldContractData {
 
     // owner of this contract
     owner_id: AccountId,
@@ -72,10 +72,35 @@ pub struct ContractData {
     reward_info: UnorderedMap<AccountId, Balance>,
 }
 
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct ContractData {
+
+    // owner of this contract
+    owner_id: AccountId,
+
+    // record seeds and the farms under it.
+    // seeds: UnorderedMap<SeedId, FarmSeed>,
+    seeds: UnorderedMap<SeedId, VersionedFarmSeed>,
+
+    // each farmer has a structure to describe
+    // farmers: LookupMap<AccountId, Farmer>,
+    farmers: LookupMap<AccountId, VersionedFarmer>,
+
+    farms: UnorderedMap<FarmId, Farm>,
+    outdated_farms: UnorderedMap<FarmId, Farm>,
+
+    nft_balance_seeds: LookupMap<SeedId, NftBalance>,
+
+    // for statistic
+    farmer_count: u64,
+    reward_info: UnorderedMap<AccountId, Balance>,
+}
+
 /// Versioned contract data. Allows to easily upgrade contracts.
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedContractData {
-    Current(ContractData),
+    Current(OldContractData),
+    CurrentV2(ContractData)
 }
 
 impl VersionedContractData {}
@@ -83,7 +108,6 @@ impl VersionedContractData {}
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
-
     data: VersionedContractData,
 }
 
@@ -93,7 +117,7 @@ impl Contract {
     pub fn new(owner_id: ValidAccountId) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
-            data: VersionedContractData::Current(ContractData {
+            data: VersionedContractData::CurrentV2(ContractData {
                 owner_id: owner_id.into(),
                 farmer_count: 0,
                 seeds: UnorderedMap::new(StorageKeys::Seed),
@@ -101,21 +125,54 @@ impl Contract {
                 farms: UnorderedMap::new(StorageKeys::Farm),
                 outdated_farms: UnorderedMap::new(StorageKeys::OutdatedFarm),
                 reward_info: UnorderedMap::new(StorageKeys::RewardInfo),
+                nft_balance_seeds: LookupMap::new(StorageKeys::NftBalanceSeed),
             }),
         }
+    }
+
+    pub fn migrate_contract(&mut self) {
+        self.data();
     }
 }
 
 impl Contract {
+
+    pub fn upgrade(self) -> ContractData {
+        match self.data {
+            VersionedContractData::CurrentV2(data) => data,
+            VersionedContractData::Current(data) => {
+                return ContractData {
+                    owner_id: data.owner_id,
+                    seeds: data.seeds,
+                    farmers: data.farmers,
+                    farms: data.farms,
+                    outdated_farms: data.outdated_farms,
+                    nft_balance_seeds: LookupMap::new(StorageKeys::NftBalanceSeed),
+                    farmer_count: data.farmer_count,
+                    reward_info: data.reward_info,
+                };
+            }
+        }
+    }
+
     fn data(&self) -> &ContractData {
         match &self.data {
-            VersionedContractData::Current(data) => data,
+            VersionedContractData::CurrentV2(data) => data,
+            VersionedContractData::Current(data) => unimplemented!(),
         }
     }
 
     fn data_mut(&mut self) -> &mut ContractData {
         match &mut self.data {
-            VersionedContractData::Current(data) => data,
+            VersionedContractData::CurrentV2(data) => data,
+            VersionedContractData::Current(data) => unimplemented!(),
+        }
+    }
+
+    fn need_upgrade(&self) -> bool {
+        match &self.data {
+            VersionedContractData::CurrentV2(data) => false,
+            VersionedContractData::Current(data) => true
         }
     }
 }
