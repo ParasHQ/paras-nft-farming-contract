@@ -129,10 +129,6 @@ impl Contract {
             }),
         }
     }
-
-    pub fn migrate_contract(&mut self) {
-        self.data();
-    }
 }
 
 impl Contract {
