@@ -25,6 +25,23 @@ use crate::farm_seed::FarmSeed;
 /// each empty hashmap cost 4 bytes
 pub const MIN_FARMER_LENGTH: u128 = MAX_ACCOUNT_LENGTH + 16 + 4 * 3;
 
+#[derive(BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "test", derive(Clone))]
+pub struct OldFarmer {
+    pub farmer_id: AccountId,
+    /// Native NEAR amount sent to this contract.
+    /// Used for storage.
+    pub amount: Balance,
+    /// Amounts of various reward tokens the farmer claimed.
+    pub rewards: HashMap<AccountId, Balance>,
+    /// Amounts of various seed tokens the farmer staked.
+    pub seeds: HashMap<SeedId, Balance>,
+    /// record user_last_rps of farms
+    pub user_rps: LookupMap<FarmId, RPS>,
+    pub rps_count: u32,
+    pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
+}
+
 /// Account deposits information and storage cost.
 #[derive(BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "test", derive(Clone))]
@@ -41,6 +58,9 @@ pub struct Farmer {
     pub user_rps: LookupMap<FarmId, RPS>,
     pub rps_count: u32,
     pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
+    // Delegated seeds (dao_token_id) to the dao_contract_id
+    pub delegated_seeds: Balance,
+    pub next_withdraw_timestamp: u64,
 }
 
 impl Farmer {
@@ -154,13 +174,14 @@ impl Farmer {
 /// each function of this enum should be carefully re-code!
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedFarmer {
-    V101(Farmer),
+    V101(OldFarmer),
+    V102(Farmer),
 }
 
 impl VersionedFarmer {
 
     pub fn new(farmer_id: AccountId, amount: Balance) -> Self {
-        VersionedFarmer::V101(Farmer {
+        VersionedFarmer::V102(Farmer {
             farmer_id: farmer_id.clone(),
             amount: amount,
             rewards: HashMap::new(),
@@ -170,13 +191,26 @@ impl VersionedFarmer {
             }),
             rps_count: 0,
             nft_seeds: HashMap::new(),
+            delegated_seeds: 0,
+            next_withdraw_timestamp: 0,
         })
     }
 
     /// Upgrades from other versions to the currently used version.
     pub fn upgrade(self) -> Self {
         match self {
-            VersionedFarmer::V101(farmer) => VersionedFarmer::V101(farmer),
+            VersionedFarmer::V102(farmer) => VersionedFarmer::V102(farmer),
+            VersionedFarmer::V101(farmer) => VersionedFarmer::V102(Farmer {
+                farmer_id: farmer.farmer_id,
+                amount: farmer.amount,
+                rewards: farmer.rewards,
+                seeds: farmer.seeds,
+                user_rps: farmer.user_rps,
+                rps_count: farmer.rps_count,
+                nft_seeds: farmer.nft_seeds,
+                delegated_seeds: 0,
+                next_withdraw_timestamp: 0,
+            })
         }
     }
 
@@ -184,7 +218,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn need_upgrade(&self) -> bool {
         match self {
-            VersionedFarmer::V101(_) => false,
+            VersionedFarmer::V102(_) => false,
             _ => true,
         }
     }
@@ -193,7 +227,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get_ref(&self) -> &Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
@@ -202,7 +236,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get(self) -> Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
@@ -211,7 +245,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get_ref_mut(&mut self) -> &mut Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }

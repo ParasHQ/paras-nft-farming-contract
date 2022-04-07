@@ -1,6 +1,6 @@
 
 use near_sdk::json_types::{U128};
-use near_sdk::{Balance, env, ext_contract, Gas, Timestamp};
+use near_sdk::{AccountId, Balance, env, ext_contract, Gas, Timestamp};
 use uint::construct_uint;
 use crate::{SeedId, FarmId, NftBalance};
 use crate::errors::*;
@@ -14,6 +14,7 @@ pub const MIN_SEED_DEPOSIT: u128 = 1_000_000_000_000_000_000;
 pub const MAX_ACCOUNT_LENGTH: u128 = 64;
 /// Amount of gas for fungible token transfers.
 pub const GAS_FOR_FT_TRANSFER: Gas = 10_000_000_000_000;
+pub const GAS_FOR_DELEGATE: Gas = 10_000_000_000_000;
 pub const GAS_FOR_NFT_TRANSFER: Gas = 20_000_000_000_000;
 /// hotfix_insuffient_gas_for_mft_resolve_transfer, increase from 5T to 20T
 pub const GAS_FOR_RESOLVE_TRANSFER: Gas = 20_000_000_000_000;
@@ -81,6 +82,13 @@ pub trait TokenPostActions {
         nft_contract_id: String,
         nft_token_id: String
     );
+}
+
+#[ext_contract(ext_dao)]
+pub trait DAOContract {
+    fn register_delegation(&mut self, account_id: AccountId);
+    fn delegate(&mut self, account_id: AccountId, amount: U128);
+    fn undelegate(&mut self, account_id: AccountId, amount: U128);
 }
 
 /// Assert that 1 yoctoNEAR was attached.

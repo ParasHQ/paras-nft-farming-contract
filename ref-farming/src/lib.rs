@@ -6,7 +6,7 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::{ValidAccountId};
 use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::{env, near_bindgen, Balance, AccountId, PanicOnDefault};
+use near_sdk::{env, near_bindgen, Balance, AccountId, PanicOnDefault, Duration};
 use near_sdk::BorshStorageKey;
 
 use crate::farm::{Farm, FarmId};
@@ -67,6 +67,8 @@ pub struct OldContractData {
     farms: UnorderedMap<FarmId, Farm>,
     outdated_farms: UnorderedMap<FarmId, Farm>,
 
+    nft_balance_seeds: LookupMap<SeedId, NftBalance>,
+
     // for statistic
     farmer_count: u64,
     reward_info: UnorderedMap<AccountId, Balance>,
@@ -94,6 +96,9 @@ pub struct ContractData {
     // for statistic
     farmer_count: u64,
     reward_info: UnorderedMap<AccountId, Balance>,
+    dao_contract_id: Option<AccountId>,
+    dao_utility_token: Option<AccountId>,
+    unstake_period: Option<Duration>
 }
 
 /// Versioned contract data. Allows to easily upgrade contracts.
@@ -114,7 +119,12 @@ pub struct Contract {
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(owner_id: ValidAccountId) -> Self {
+    pub fn new(
+        owner_id: ValidAccountId,
+        dao_contract_id: Option<ValidAccountId>,
+        dao_utility_token: Option<ValidAccountId>,
+        unstake_period: Option<Duration>
+    ) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
             data: VersionedContractData::CurrentV2(ContractData {
@@ -126,6 +136,17 @@ impl Contract {
                 outdated_farms: UnorderedMap::new(StorageKeys::OutdatedFarm),
                 reward_info: UnorderedMap::new(StorageKeys::RewardInfo),
                 nft_balance_seeds: LookupMap::new(StorageKeys::NftBalanceSeed),
+                dao_contract_id: if let Some(dao_contract_id) = dao_contract_id {
+                    Some(dao_contract_id.to_string())
+                } else {
+                    None
+                },
+                dao_utility_token: if let Some(dao_utility_token) = dao_utility_token {
+                    Some(dao_utility_token.to_string())
+                } else {
+                    None
+                },
+                unstake_period: unstake_period,
             }),
         }
     }
@@ -133,7 +154,7 @@ impl Contract {
 
 impl Contract {
 
-    fn upgrade(self) -> ContractData {
+    fn upgrade(self, dao_contract_id: Option<AccountId>, dao_utility_token: Option<AccountId>, unstake_period: Option<Duration>) -> ContractData {
         match self.data {
             VersionedContractData::CurrentV2(data) => data,
             VersionedContractData::Current(data) => {
@@ -146,6 +167,9 @@ impl Contract {
                     nft_balance_seeds: LookupMap::new(StorageKeys::NftBalanceSeed),
                     farmer_count: data.farmer_count,
                     reward_info: data.reward_info,
+                    dao_contract_id: dao_contract_id,
+                    dao_utility_token: dao_utility_token,
+                    unstake_period: unstake_period
                 };
             }
         }

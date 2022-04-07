@@ -26,7 +26,11 @@ impl Contract {
     /// For next version upgrades, change this function.
     #[init(ignore_state)]
     #[private]
-    pub fn migrate() -> Self {
+    pub fn migrate(
+        dao_contract_id: Option<ValidAccountId>,
+        dao_utility_token: Option<ValidAccountId>,
+        unstake_period: Option<Duration>
+    ) -> Self {
         assert_eq!(
             env::predecessor_account_id(),
             env::current_account_id(),
@@ -34,7 +38,19 @@ impl Contract {
         );
         let contract: Contract = env::state_read().expect("ERR_NOT_INITIALIZED");
         return if contract.need_upgrade() {
-            let contract_data_upgraded = contract.upgrade();
+            let contract_data_upgraded = contract.upgrade(
+                if let Some(dao_contract_id) = dao_contract_id {
+                    Some(dao_contract_id.to_string())
+                } else {
+                    None
+                },
+                if let Some(dao_utility_token) = dao_utility_token {
+                    Some(dao_utility_token.to_string())
+                } else {
+                    None
+                },
+                unstake_period
+            );
             let this = Contract {
                 data: VersionedContractData::CurrentV2(contract_data_upgraded)
             };

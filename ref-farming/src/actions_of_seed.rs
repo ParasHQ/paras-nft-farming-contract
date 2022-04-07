@@ -1,15 +1,17 @@
 
 use std::convert::TryInto;
 use near_sdk::json_types::{U128};
-use near_sdk::{AccountId, Balance, PromiseResult};
+use near_sdk::{AccountId, Balance, ext_contract, PromiseResult};
 
-use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent};
+use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_dao, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, GAS_FOR_DELEGATE};
 use crate::errors::*;
 use crate::farm_seed::SeedType;
 use crate::*;
 use crate::simple_farm::{NFTTokenId, ContractNFTTokenId};
 use crate::utils::NFT_DELIMETER;
 use std::collections::HashMap;
+use std::thread::current;
+
 
 #[near_bindgen]
 impl Contract {
@@ -102,6 +104,36 @@ impl Contract {
                     ));
             }
         }
+    }
+
+    #[payable]
+    pub fn delegate_seed(&mut self, amount: U128)  {
+        let sender_id = env::predecessor_account_id();
+
+        self.internal_seed_delegate(sender_id.clone(), amount);
+
+        // call dao contract to delegate seed
+        ext_dao::delegate(
+            sender_id.into(),
+            amount,
+            &self.data().dao_contract_id.as_ref().unwrap(),
+            0,
+            GAS_FOR_DELEGATE
+        );
+    }
+
+    #[payable]
+    pub fn undelegate_seed(&mut self, amount: U128) {
+        let sender_id = env::predecessor_account_id();
+
+        self.internal_seed_undelegate(sender_id.clone(), amount);
+        ext_dao::undelegate(
+            sender_id.into(),
+            amount,
+            &self.data().dao_contract_id.as_ref().unwrap(),
+            0,
+            GAS_FOR_DELEGATE
+        );
     }
 
     #[private]
@@ -330,7 +362,18 @@ impl Contract {
         &mut self, 
         seed_id: &SeedId, 
         sender_id: &AccountId, 
-        amount: Balance) -> SeedType {
+        amount: Balance)
+        -> SeedType {
+
+        if let Some(dao_utility_token) = self.data().dao_utility_token.clone() {
+            if seed_id == &dao_utility_token {
+                let farmer = self.get_farmer(sender_id);
+                assert!(
+                    env::block_timestamp() >= farmer.get_ref().next_withdraw_timestamp,
+                    "ERR_NOT_ENOUGH_TIME_PASSED_FOR_WITHDRAWING"
+                )
+            }
+        }
 
         // first claim all reward of the user for this seed farms
         // to update user reward_per_seed in each farm
@@ -458,4 +501,35 @@ impl Contract {
         contract_nft_token_id
     }
 
+    pub(crate) fn internal_seed_delegate(&mut self, sender_id: AccountId, amount: U128) {
+        let mut farmer = self.get_farmer(&sender_id);
+        let prev_delegated_seed = farmer.get_ref_mut().delegated_seeds;
+        let new_delegated_seed = prev_delegated_seed + amount.0;
+
+        let current_total_seed: &Balance = farmer.get_ref().seeds.get(self.data().dao_utility_token.as_ref().unwrap().as_str()).unwrap();
+
+        assert!(
+            new_delegated_seed <= *current_total_seed,
+            "ERR_NOT_ENOUGH_SEED_AMOUNT"
+        );
+
+        farmer.get_ref_mut().delegated_seeds = new_delegated_seed;
+        self.data_mut().farmers.insert(&sender_id, &farmer);
+    }
+
+    pub(crate) fn internal_seed_undelegate(&mut self, sender_id: AccountId, amount: U128) {
+        let mut farmer = self.get_farmer(&sender_id);
+        let prev_delegated_seed = farmer.get_ref_mut().delegated_seeds;
+        let new_delegated_seed = prev_delegated_seed - amount.0;
+
+        let current_total_seed: &Balance = farmer.get_ref().seeds.get(self.data().dao_utility_token.as_ref().unwrap().as_str()).unwrap();
+
+        assert!(
+            new_delegated_seed <= *current_total_seed,
+            "ERR_NOT_ENOUGH_SEED_AMOUNT"
+        );
+        farmer.get_ref_mut().delegated_seeds = new_delegated_seed;
+        farmer.get_ref_mut().next_withdraw_timestamp = env::block_timestamp() + self.data().unstake_period.unwrap_or(0);
+        self.data_mut().farmers.insert(&sender_id, &farmer);
+    }
 }
