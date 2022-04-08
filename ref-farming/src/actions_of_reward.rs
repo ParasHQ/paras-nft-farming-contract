@@ -45,6 +45,15 @@ impl Contract {
         self.assert_storage_usage(&sender_id);
     }
 
+    pub fn add_claimed_reward_fix(&mut self, account_id: AccountId, token_id: AccountId, amount: U128) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id(), "ERR_NO_PERMISSION");
+        let mut farmer = self.get_farmer(&account_id);
+        let mut farmer_mut = farmer.get_ref_mut();
+        let current_reward = farmer_mut.rewards.get(&token_id).unwrap_or(&0).clone();
+        farmer_mut.rewards.insert(token_id, current_reward + amount.0);
+        self.data_mut().farmers.insert(&account_id, &farmer);
+    }
+
     #[payable]
     pub fn claim_reward_by_seed_and_deposit(&mut self, seed_id: SeedId, seed_id_deposit: SeedId, is_deposit_seed_reward: bool) {
         assert_one_yocto();
