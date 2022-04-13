@@ -20,7 +20,7 @@ fn test_upgrade() {
         contract_id: "farming".to_string(),
         bytes: &PREV_FARMING_WASM_BYTES,
         signer_account: root,
-        init_method: new(ValidAccountId::try_from(root.account_id.clone()).unwrap())
+        init_method: new(ValidAccountId::try_from(root.account_id.clone()).unwrap(), None, None, None)
     );
 
     // Failed upgrade with no permissions.

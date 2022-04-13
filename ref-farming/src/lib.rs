@@ -213,7 +213,7 @@ mod tests {
     fn setup_contract() -> (VMContextBuilder, Contract) {
         let mut context = VMContextBuilder::new();
         testing_env!(context.predecessor_account_id(accounts(0)).build());
-        let contract = Contract::new(accounts(0));
+        let contract = Contract::new(accounts(0), None, None, None);
         (context, contract)
     }
 

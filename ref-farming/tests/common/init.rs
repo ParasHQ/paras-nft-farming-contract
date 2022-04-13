@@ -25,7 +25,7 @@ pub fn deploy_farming(root: &UserAccount, farming_id: AccountId, owner_id: Accou
         contract_id: farming_id,
         bytes: &FARM_WASM_BYTES,
         signer_account: root,
-        init_method: new(to_va(owner_id))
+        init_method: new(to_va(owner_id), None, None, None)
     );
     farming
 }
