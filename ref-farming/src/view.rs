@@ -337,5 +337,9 @@ impl Contract {
         return result;
     }
 
+    pub fn get_next_withdraw_timestamp(&self, account_id: ValidAccountId) -> U128 {
+        U128(self.data().farmers.get(&account_id.to_string()).unwrap().get_ref().next_withdraw_timestamp as u128)
+    }
+
 
 }
