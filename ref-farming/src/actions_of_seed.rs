@@ -388,23 +388,32 @@ impl Contract {
         sender_id: &AccountId, 
         amount: Balance)
         -> SeedType {
-
-        if let Some(dao_utility_token) = self.data().dao_utility_token.clone() {
-            if seed_id == &dao_utility_token {
-                let farmer = self.get_farmer(sender_id);
-                assert!(
-                    env::block_timestamp() >= farmer.get_ref().next_withdraw_timestamp,
-                    "ERR_NOT_ENOUGH_TIME_PASSED_FOR_WITHDRAWING"
-                )
-            }
-        }
-
         // first claim all reward of the user for this seed farms
         // to update user reward_per_seed in each farm
         self.internal_claim_user_reward_by_seed_id(sender_id, seed_id);
 
         let mut farm_seed = self.get_seed(seed_id);
         let mut farmer = self.get_farmer(sender_id);
+
+        if let Some(dao_utility_token) = self.data().dao_utility_token.clone() {
+            if seed_id == &dao_utility_token {
+                let total_seed = farmer.get_ref().seeds.get(seed_id).unwrap();
+
+                let undelegated_seed = farmer.get_ref().undelegated_seeds;
+
+                let free_seed = total_seed - farmer.get_ref().delegated_seeds - undelegated_seed;
+
+                if amount > free_seed && amount <= free_seed + undelegated_seed {
+                    assert!(
+                        env::block_timestamp() >= farmer.get_ref().next_withdraw_timestamp,
+                        "ERR_NOT_ENOUGH_TIME_PASSED_FOR_WITHDRAWING"
+                    );
+                    farmer.get_ref_mut().undelegated_seeds -= amount - free_seed;
+                } else if amount > free_seed + undelegated_seed {
+                    panic!("ERR_NOT_ENOUGH_UNDELEGATED_BALANCE");
+                }
+            }
+        }
 
         // Then update user seed and total seed of this LPT
         let farmer_seed_remain = farmer.get_ref_mut().sub_seed(seed_id, amount);
@@ -531,11 +540,17 @@ impl Contract {
         let new_delegated_seed = prev_delegated_seed + amount.0;
 
         let current_total_seed: &Balance = farmer.get_ref().seeds.get(self.data().dao_utility_token.as_ref().unwrap().as_str()).unwrap();
+        let undelegated_seed = farmer.get_ref().undelegated_seeds;
+        let free_seed = current_total_seed - undelegated_seed;
 
         assert!(
             new_delegated_seed <= *current_total_seed,
             "ERR_NOT_ENOUGH_SEED_AMOUNT"
         );
+
+        if amount.0 > free_seed {
+            farmer.get_ref_mut().undelegated_seeds -= amount.0 - free_seed;
+        }
 
         farmer.get_ref_mut().delegated_seeds = new_delegated_seed;
         self.data_mut().farmers.insert(&sender_id, &farmer);
@@ -554,6 +569,7 @@ impl Contract {
         );
         farmer.get_ref_mut().delegated_seeds = new_delegated_seed;
         farmer.get_ref_mut().next_withdraw_timestamp = env::block_timestamp() + self.data().unstake_period.unwrap_or(0);
+        farmer.get_ref_mut().undelegated_seeds += amount.0;
         self.data_mut().farmers.insert(&sender_id, &farmer);
     }
 }
