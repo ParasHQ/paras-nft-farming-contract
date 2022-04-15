@@ -107,6 +107,30 @@ impl Contract {
     }
 
     #[payable]
+    pub fn register_delegation(&mut self) {
+        let sender_id = env::predecessor_account_id();
+
+        let attached_deposit = env::attached_deposit();
+
+        assert_eq!(attached_deposit, 16 * env::storage_byte_cost()); // 16 bytes
+
+        let mut farmer = self.data_mut().farmers.get(&sender_id).unwrap();
+        assert_eq!(farmer.get_ref().is_register_delegation, false);
+        farmer.get_ref_mut().is_register_delegation = true;
+
+        self.data_mut().farmers.insert(&sender_id, &farmer);
+
+
+
+        ext_dao::register_delegation(
+            sender_id.into(),
+            &self.data().dao_contract_id.as_ref().unwrap(),
+            attached_deposit,
+            GAS_FOR_DELEGATE
+        );
+    }
+
+    #[payable]
     pub fn delegate_seed(&mut self, amount: U128)  {
         let sender_id = env::predecessor_account_id();
 

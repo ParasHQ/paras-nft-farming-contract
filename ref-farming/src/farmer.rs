@@ -59,6 +59,7 @@ pub struct Farmer {
     pub rps_count: u32,
     pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
     // Delegated seeds (dao_token_id) to the dao_contract_id
+    pub is_register_delegation: bool,
     pub delegated_seeds: Balance,
     pub next_withdraw_timestamp: u64,
 }
@@ -191,6 +192,7 @@ impl VersionedFarmer {
             }),
             rps_count: 0,
             nft_seeds: HashMap::new(),
+            is_register_delegation: false,
             delegated_seeds: 0,
             next_withdraw_timestamp: 0,
         })
@@ -208,6 +210,7 @@ impl VersionedFarmer {
                 user_rps: farmer.user_rps,
                 rps_count: farmer.rps_count,
                 nft_seeds: farmer.nft_seeds,
+                is_register_delegation: false,
                 delegated_seeds: 0,
                 next_withdraw_timestamp: 0,
             })
