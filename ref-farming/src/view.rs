@@ -49,6 +49,15 @@ pub struct FarmInfo {
     pub beneficiary_reward: U128,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct DelegationInfo {
+    pub next_withdraw_timestamp: U128,
+    pub undelegated_seeds: U128,
+    pub delegated_seeds: U128,
+    pub free_seeds: U128
+}
+
 impl From<&Farm> for FarmInfo {
     fn from(farm: &Farm) -> Self {
         let farm_kind = farm.kind();
@@ -339,6 +348,25 @@ impl Contract {
 
     pub fn get_next_withdraw_timestamp(&self, account_id: ValidAccountId) -> U128 {
         U128(self.data().farmers.get(&account_id.to_string()).unwrap().get_ref().next_withdraw_timestamp as u128)
+    }
+
+    pub fn get_user_delegations(&self, account_id: ValidAccountId) -> DelegationInfo {
+        let farmer = self.data().farmers.get(&account_id.to_string()).unwrap();
+
+        let dao_utility_token = self.data().dao_utility_token.clone().unwrap();
+        let total_seed = farmer.get_ref().seeds.get(&dao_utility_token).unwrap();
+
+        let undelegated_seeds = farmer.get_ref().undelegated_seeds;
+        let delegated_seeds = farmer.get_ref().delegated_seeds;
+
+        let free_seed = total_seed - delegated_seeds - undelegated_seeds;
+
+        return DelegationInfo {
+            next_withdraw_timestamp: U128(farmer.get_ref().next_withdraw_timestamp as u128),
+            undelegated_seeds: U128(undelegated_seeds),
+            delegated_seeds: U128(delegated_seeds),
+            free_seeds: U128(free_seed)
+        }
     }
 
 
