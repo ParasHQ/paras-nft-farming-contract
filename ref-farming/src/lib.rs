@@ -164,7 +164,7 @@ impl Contract {
                     farmers: data.farmers,
                     farms: data.farms,
                     outdated_farms: data.outdated_farms,
-                    nft_balance_seeds: LookupMap::new(StorageKeys::NftBalanceSeed),
+                    nft_balance_seeds: data.nft_balance_seeds,
                     farmer_count: data.farmer_count,
                     reward_info: data.reward_info,
                     dao_contract_id: dao_contract_id,
