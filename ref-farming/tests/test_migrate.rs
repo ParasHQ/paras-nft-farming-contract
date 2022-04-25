@@ -2,11 +2,13 @@ use std::convert::TryFrom;
 
 use near_sdk::json_types::ValidAccountId;
 use near_sdk_sim::{deploy, init_simulator, to_yocto};
+use near_sdk::serde_json::json;
+
 
 use ref_farming::ContractContract as Farming;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    PREV_FARMING_WASM_BYTES => "../res/ref_farming_local.wasm",
+    PREV_FARMING_WASM_BYTES => "../res/ref_farming_101.wasm",
     FARMING_WASM_BYTES => "../res/ref_farming_release.wasm",
 }
 
@@ -27,31 +29,22 @@ fn test_upgrade() {
     let result = test_user
         .call(
             farming.user_account.account_id.clone(),
-            "upgrade",
-            &PREV_FARMING_WASM_BYTES,
+            "migrate",
+            &json!({}).to_string().into_bytes(),
             near_sdk_sim::DEFAULT_GAS,
             0,
         )
         .status();
-    assert!(format!("{:?}", result).contains("ERR_NOT_ALLOWED"));
+    assert!(format!("{:?}", result).contains("Method migrate is private"));
 
-    // Upgrade with calling migration. Should fail as currently migration not implemented
-    root.call(
+    farming.user_account.deploy(&FARMING_WASM_BYTES, farming.user_account.account_id.clone(), 100);
+
+    let result = farming.user_account.call(
         farming.user_account.account_id.clone(),
-        "upgrade",
-        &FARMING_WASM_BYTES,
+        "migrate",
+        format!("").as_bytes(),
         near_sdk_sim::DEFAULT_GAS,
         0,
     )
-    .assert_success();
-
-    // Upgrade to the same code without migration is successful.
-    root.call(
-        farming.user_account.account_id.clone(),
-        "upgrade",
-        &FARMING_WASM_BYTES,
-        near_sdk_sim::DEFAULT_GAS,
-        0,
-    )
-    .assert_success();
+        .status();
 }
