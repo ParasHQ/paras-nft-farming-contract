@@ -351,10 +351,10 @@ impl Contract {
     }
 
     pub fn get_user_delegations(&self, account_id: ValidAccountId) -> DelegationInfo {
-        let farmer = self.data().farmers.get(&account_id.to_string()).unwrap();
+        let farmer = self.get_farmer(account_id.as_ref());
 
         let dao_utility_token = self.data().dao_utility_token.clone().unwrap();
-        let total_seed = farmer.get_ref().seeds.get(&dao_utility_token).unwrap();
+        let total_seed = farmer.get_ref().seeds.get(&dao_utility_token).unwrap_or(&0u128);
 
         let undelegated_seeds = farmer.get_ref().undelegated_seeds;
         let delegated_seeds = farmer.get_ref().delegated_seeds;
@@ -369,5 +369,7 @@ impl Contract {
         }
     }
 
-
+    pub fn get_dao_info(&self) -> (Option<AccountId>, Option<AccountId>, Option<Duration>) {
+        (self.data().dao_contract_id.clone(), self.data().dao_utility_token.clone(), self.data().unstake_period.clone())
+    }
 }
