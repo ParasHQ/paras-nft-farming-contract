@@ -52,7 +52,7 @@ impl Contract {
                 unstake_period
             );
             let this = Contract {
-                data: VersionedContractData::CurrentV2(contract_data_upgraded)
+                data: VersionedContractData::CurrentV3(contract_data_upgraded)
             };
             this
         } else {

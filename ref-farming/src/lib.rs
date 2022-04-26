@@ -51,11 +51,33 @@ pub enum StorageKeys {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+pub struct OldOldContractData {
+
+    // owner of this contract
+    owner_id: AccountId,
+
+    // record seeds and the farms under it.
+    // seeds: UnorderedMap<SeedId, FarmSeed>,
+    seeds: UnorderedMap<SeedId, VersionedFarmSeed>,
+
+    // each farmer has a structure to describe
+    // farmers: LookupMap<AccountId, Farmer>,
+    farmers: LookupMap<AccountId, VersionedFarmer>,
+
+    farms: UnorderedMap<FarmId, Farm>,
+    outdated_farms: UnorderedMap<FarmId, Farm>,
+
+    // for statistic
+    farmer_count: u64,
+    reward_info: UnorderedMap<AccountId, Balance>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct OldContractData {
 
     // owner of this contract
     owner_id: AccountId,
-    
+
     // record seeds and the farms under it.
     // seeds: UnorderedMap<SeedId, FarmSeed>,
     seeds: UnorderedMap<SeedId, VersionedFarmSeed>,
@@ -104,8 +126,9 @@ pub struct ContractData {
 /// Versioned contract data. Allows to easily upgrade contracts.
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedContractData {
-    Current(OldContractData),
-    CurrentV2(ContractData)
+    Current(OldOldContractData),
+    CurrentV2(OldContractData),
+    CurrentV3(ContractData)
 }
 
 impl VersionedContractData {}
@@ -127,7 +150,7 @@ impl Contract {
     ) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self {
-            data: VersionedContractData::CurrentV2(ContractData {
+            data: VersionedContractData::CurrentV3(ContractData {
                 owner_id: owner_id.into(),
                 farmer_count: 0,
                 seeds: UnorderedMap::new(StorageKeys::Seed),
@@ -156,8 +179,8 @@ impl Contract {
 
     fn upgrade(self, dao_contract_id: Option<AccountId>, dao_utility_token: Option<AccountId>, unstake_period: Option<Duration>) -> ContractData {
         match self.data {
-            VersionedContractData::CurrentV2(data) => data,
-            VersionedContractData::Current(data) => {
+            VersionedContractData::CurrentV3(data) => data,
+            VersionedContractData::CurrentV2(data) => {
                 return ContractData {
                     owner_id: data.owner_id,
                     seeds: data.seeds,
@@ -171,28 +194,30 @@ impl Contract {
                     dao_utility_token: dao_utility_token,
                     unstake_period: unstake_period
                 };
-            }
+            },
+            _ => unimplemented!()
         }
     }
 
     fn data(&self) -> &ContractData {
         match &self.data {
-            VersionedContractData::CurrentV2(data) => data,
-            VersionedContractData::Current(data) => unimplemented!(),
+            VersionedContractData::CurrentV3(data) => data,
+            _ => unimplemented!()
         }
     }
 
     fn data_mut(&mut self) -> &mut ContractData {
         match &mut self.data {
-            VersionedContractData::CurrentV2(data) => data,
-            VersionedContractData::Current(data) => unimplemented!(),
+            VersionedContractData::CurrentV3(data) => data,
+            _ => unimplemented!()
         }
     }
 
     fn need_upgrade(&self) -> bool {
         match &self.data {
-            VersionedContractData::CurrentV2(data) => false,
-            VersionedContractData::Current(data) => true
+            VersionedContractData::CurrentV3(data) => false,
+            VersionedContractData::CurrentV2(data) => true,
+            _ => unimplemented!(),
         }
     }
 }
