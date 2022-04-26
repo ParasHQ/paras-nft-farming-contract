@@ -114,7 +114,7 @@ impl Contract {
 
         assert_eq!(attached_deposit, 16 * env::storage_byte_cost()); // 16 bytes
 
-        let mut farmer = self.data_mut().farmers.get(&sender_id).unwrap();
+        let mut farmer = self.get_farmer(&sender_id);
         assert_eq!(farmer.get_ref().is_register_delegation, false);
         farmer.get_ref_mut().is_register_delegation = true;
 
