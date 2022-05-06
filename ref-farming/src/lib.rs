@@ -238,7 +238,12 @@ mod tests {
     fn setup_contract() -> (VMContextBuilder, Contract) {
         let mut context = VMContextBuilder::new();
         testing_env!(context.predecessor_account_id(accounts(0)).build());
-        let contract = Contract::new(accounts(0), None, None, None);
+        let contract = Contract::new(
+            accounts(0),
+            Some(accounts(0)),
+            Some(accounts(0)),
+            Some(24 * 60 * 60 * 1u64.pow(9))
+        );
         (context, contract)
     }
 
@@ -400,6 +405,13 @@ mod tests {
     fn test_basics() {
 
         let (mut context, mut contract) = setup_contract();
+
+        let metadata = contract.get_metadata();
+
+        assert_eq!(metadata.owner_id, accounts(0).to_string());
+        assert_eq!(metadata.dao_contract_id, Some(accounts(0).to_string()));
+        assert_eq!(metadata.dao_utility_token, Some(accounts(0).to_string()));
+        assert_eq!(metadata.unstake_period, Some(24*60*60*1u64.pow(9)));
         // seed is bob, reward is charlie
         let farm_id = create_farm(&mut context, &mut contract,
             accounts(1), accounts(2), 5000, 50);

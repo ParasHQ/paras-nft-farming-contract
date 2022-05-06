@@ -27,6 +27,9 @@ pub struct Metadata {
     pub farm_count: U64,
     pub seed_count: U64,
     pub reward_count: U64,
+    pub dao_contract_id: Option<AccountId>,
+    pub dao_utility_token: Option<AccountId>,
+    pub unstake_period: Option<Duration>
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -122,6 +125,9 @@ impl Contract {
             farm_count: self.data().farms.len().into(),
             seed_count: self.data().seeds.len().into(),
             reward_count: self.data().reward_info.len().into(),
+            dao_contract_id: self.data().dao_contract_id.clone(),
+            dao_utility_token: self.data().dao_utility_token.clone(),
+            unstake_period: self.data().unstake_period.clone()
         }
     }
 
