@@ -1,3 +1,5 @@
+RFLAGS="-C link-arg=-s"
+
 release:
 	$(call docker_build,_rust_setup.sh)
 	mkdir -p res
