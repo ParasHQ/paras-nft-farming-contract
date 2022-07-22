@@ -31,12 +31,13 @@ impl FungibleTokenReceiver for Contract {
     ) -> PromiseOrValue<U128> {
         let sender: AccountId = sender_id.into();
         let amount: u128 = amount.into();
+        let nft_contract_id = env::predecessor_account_id();
 
         if msg.is_empty() {
             // ****** seed Token deposit in ********
 
             // if seed not exist, it will panic
-            let seed_farm = self.get_seed(&env::predecessor_account_id());
+            let seed_farm = self.get_seed(&nft_contract_id);
 
             assert_eq!(seed_farm.get_ref().seed_type, SeedType::FT, "Cannot deposit FT to this seed");
 
@@ -52,7 +53,7 @@ impl FungibleTokenReceiver for Contract {
             }
 
             self.internal_seed_deposit(
-                &env::predecessor_account_id(),
+                &nft_contract_id,
                 &sender,
                 amount.into(),
                 SeedType::FT,
@@ -64,7 +65,7 @@ impl FungibleTokenReceiver for Contract {
                 format!(
                     "{} deposit FT seed {} with amount {}.",
                     sender,
-                    env::predecessor_account_id(),
+                    nft_contract_id,
                     amount,
                 )
                 .as_bytes(),
