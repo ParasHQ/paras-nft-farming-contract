@@ -1,14 +1,13 @@
-use near_sdk_sim::{call, init_simulator, to_yocto, view, DEFAULT_GAS};
-use near_sdk::json_types::{U128};
+use near_sdk_sim::{call, init_simulator, to_yocto};
+use near_sdk::json_types::U128;
 use near_sdk::serde_json::Value;
 
-use ref_farming::{HRSimpleFarmTerms};
+use ref_farming::HRSimpleFarmTerms;
 
 use crate::common::utils::*;
-use crate::common::init::{deploy_farming, deploy_nft_contract};
+use crate::common::init::deploy_farming;
 use crate::common::views::*;
 use crate::common::actions::*;
-use near_sdk::serde_json::json;
 use std::collections::HashMap;
 
 mod common;
@@ -146,7 +145,7 @@ fn compound_single_paras_farm() {
 
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
     assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 3, 3, to_yocto("3"), to_yocto("0"), 0);
-    let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
+    let _unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     let deposited_amount: HashMap<String, U128> = show_userseeds(&farming, farmer1.account_id.clone(), false);
     assert_eq!(deposited_amount.get(token1.account_id().as_str()).unwrap(), &U128(to_yocto("4")));
 
@@ -178,7 +177,7 @@ fn compound_single_paras_farm() {
 
     let farm_info = show_farminfo(&farming, farm_id.clone(), false);
     assert_farming(&farm_info, "Running".to_string(), to_yocto("10"), 4, 4, to_yocto("4"), to_yocto("0"), 0);
-    let unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
+    let _unclaim = show_unclaim(&farming, farmer1.account_id(), farm_id.clone(), false);
     let deposited_amount: HashMap<String, U128> = show_userseeds(&farming, farmer1.account_id.clone(), false);
     assert_eq!(deposited_amount.get(token1.account_id().as_str()).unwrap(), &U128(to_yocto("5")));
 }
