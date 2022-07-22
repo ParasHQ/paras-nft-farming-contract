@@ -142,7 +142,7 @@ impl Contract {
         token_id: String,
         approval_id: u64,
         balance: U128,
-        max_len_payout: u32,
+        _max_len_payout: u32,
     ) -> HashMap<AccountId, U128> {
         assert_one_yocto();
 

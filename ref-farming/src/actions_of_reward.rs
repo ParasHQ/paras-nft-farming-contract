@@ -1,13 +1,11 @@
-
+use std::collections::HashMap;
 use std::convert::TryInto;
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::{assert_one_yocto, env, near_bindgen, AccountId, Balance, PromiseResult};
-
 use crate::utils::{ext_fungible_token, ext_self, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, parse_farm_id};
 use crate::errors::*;
 use crate::*;
 use uint::construct_uint;
-use crate::token_receiver::TokenId;
 
 construct_uint! {
     /// 256-bit unsigned integer.
@@ -105,14 +103,16 @@ impl Contract {
         let farmer = self.get_farmer(&sender_id);
 
         let seed = self.data().seeds.get(&seed_id).unwrap();
-        let mut reward_tokens: Vec<AccountId> = vec![];
+        // use hashmap instead of vector, O(1)
+        let mut reward_token_map = HashMap::new();
+
         for farm_id in seed.get_ref().farms.iter() {
             let reward_token = self.data().farms.get(farm_id).unwrap().get_reward_token();
-            if !reward_tokens.contains(&reward_token) {
+            if !reward_token_map.contains_key(&reward_token){
                 if farmer.get_ref().rewards.get(&reward_token).is_some() {
                     self.internal_withdraw_reward(reward_token.clone(), None);
                 }
-                reward_tokens.push(reward_token);
+                reward_token_map.insert(reward_token.clone(), true);
             }
         };
     }

@@ -1,6 +1,6 @@
 use near_sdk_sim::{call, init_simulator, to_yocto, DEFAULT_GAS};
-use near_sdk::json_types::{U128};
-use ref_farming::{HRSimpleFarmTerms};
+use near_sdk::json_types::U128;
+use ref_farming::HRSimpleFarmTerms;
 
 use crate::common::utils::*;
 use crate::common::init::deploy_farming;

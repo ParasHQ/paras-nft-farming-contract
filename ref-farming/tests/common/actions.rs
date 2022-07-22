@@ -1,12 +1,11 @@
 
-use near_sdk::json_types::{U128};
-use near_sdk::{Balance};
+use near_sdk::json_types::U128;
+use near_sdk::Balance;
 use near_sdk_sim::{call, to_yocto, ContractAccount, UserAccount, DEFAULT_GAS};
 
-// use near_sdk_sim::transaction::ExecutionStatus;
 use test_token::ContractContract as TestToken;
-use ref_farming::{ContractContract as Farming};
-use ref_farming::{HRSimpleFarmTerms};
+use ref_farming::ContractContract as Farming;
+use ref_farming::HRSimpleFarmTerms;
 use near_sdk::serde_json::Value;
 use near_sdk::serde_json::json;
 

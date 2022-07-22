@@ -4,9 +4,7 @@ use near_sdk::{Balance, env, ext_contract, Gas, Timestamp};
 use uint::construct_uint;
 use crate::{SeedId, FarmId, NftBalance};
 use crate::errors::*;
-use crate::farm_seed::{FarmSeed, NFTTokenId};
 use crate::simple_farm::ContractNFTTokenId;
-use std::collections::HashMap;
 
 pub type TimestampSec = u32;
 
@@ -88,11 +86,6 @@ pub fn assert_one_yocto() {
     assert_eq!(env::attached_deposit(), 1, "Requires attached deposit of exactly 1 yoctoNEAR")
 }
 
-/// wrap token_id into correct format in MFT standard
-pub fn wrap_mft_token_id(token_id: &str) -> String {
-    format!(":{}", token_id)
-}
-
 // return receiver_id, token_id
 pub fn parse_seed_id(lpt_id: &str) -> (String, String) {
     let v: Vec<&str> = lpt_id.split(MFT_TAG).collect();
@@ -132,8 +125,7 @@ pub fn get_nft_balance_equivalent(
 ) -> Option<Balance> {
     // split x.paras.near@1:1
     // to "x.paras.near@1", ":1"
-    let mut result: Option<Balance> = None;
-
+    let result: Option<Balance>;
     if let Some(nft_balance_equivalent) = nft_balance.get(&nft_staked.to_string()) {
         result = Some(nft_balance_equivalent.0);
     } else if nft_staked.contains(PARAS_SERIES_DELIMETER) {

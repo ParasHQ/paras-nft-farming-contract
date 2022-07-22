@@ -3,15 +3,14 @@
 
 use std::collections::HashSet;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{Balance};
+use near_sdk::{Balance, env};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use crate::errors::*;
 use crate::farm::FarmId;
 use crate::utils::parse_seed_id;
 use std::collections::HashMap;
-use near_sdk::collections::LookupMap;
-use crate::{Contract, StorageKeys};
+use crate::Contract;
 
 
 /// For MFT, SeedId composes of token_contract_id 
@@ -26,7 +25,6 @@ pub(crate) type NftBalance = HashMap<NFTTokenId, U128>; //paras-comic-dev.testne
 #[derive(BorshSerialize, BorshDeserialize, Clone, PartialEq, Debug)]
 pub enum SeedType {
     FT,
-    MFT,
     NFT
 }
 
@@ -86,7 +84,7 @@ impl FarmSeed {
         } else if token_id == token_index {
             seed_type = SeedType::FT; // If NFT, then SeedId will indicate the balance equivalent instead of adding seed with FT
         } else {
-            seed_type = SeedType::MFT;
+            env::panic(format!("{}", ERR45_SEED_TYPE_IS_NOT_MATCHED).as_bytes());
         }
         Self {
             seed_id: seed_id.clone(),
@@ -202,7 +200,6 @@ impl From<&FarmSeed> for SeedInfo {
         let seed_type = match fs.seed_type {
             SeedType::FT => "FT".to_string(),
             SeedType::NFT => "NFT".to_string(),
-            SeedType::MFT => "MFT".to_string(),
         };
         if let Some(seed_metadata) = fs.metadata.clone() {
             Self {

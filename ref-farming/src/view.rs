@@ -8,7 +8,7 @@ use near_sdk::{near_bindgen, AccountId};
 
 use crate::farm_seed::SeedInfo;
 use crate::utils::{parse_farm_id, PARAS_SERIES_DELIMETER, NFT_DELIMETER};
-use crate::simple_farm::{DENOM};
+use crate::simple_farm::DENOM;
 use crate::*;
 
 use uint::construct_uint;
@@ -310,8 +310,8 @@ impl Contract {
 
     pub fn get_nft_balance_equivalent(&self, seed_id: SeedId, nft_token_id: String) -> Option<U128> {
         let nft_balance = self.data().nft_balance_seeds.get(&seed_id).unwrap();
-        let mut result: Option<U128> = None;
 
+        let result: Option<U128>;
         if let Some(nft_balance_equivalent) = nft_balance.get(&nft_token_id.to_string()) {
             result = Some(*nft_balance_equivalent);
         } else if nft_token_id.contains(PARAS_SERIES_DELIMETER) {

@@ -1,6 +1,5 @@
 use crate::errors::*;
 use crate::farm_seed::SeedType;
-use crate::utils::{MFT_TAG, FT_INDEX_TAG};
 use crate::*;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -120,95 +119,12 @@ pub trait MFTTokenReceiver {
     ) -> PromiseOrValue<U128>;
 }
 
-enum TokenOrPool {
-    Token(AccountId),
-    Pool(u64),
-}
-
-/// a sub token would use a format ":<u64>"
-fn try_identify_sub_token_id(token_id: &String) -> Result<u64, &'static str> {
-    if token_id.starts_with(":") {
-        if let Ok(pool_id) = str::parse::<u64>(&token_id[1..token_id.len()]) {
-            Ok(pool_id)
-        } else {
-            Err("Illegal pool id")
-        }
-    } else {
-        Err("Illegal pool id")
-    }
-}
-
-fn parse_token_id(token_id: String) -> TokenOrPool {
-    if let Ok(pool_id) = try_identify_sub_token_id(&token_id) {
-        TokenOrPool::Pool(pool_id)
-    } else {
-        TokenOrPool::Token(token_id)
-    }
-}
-
-/// seed token deposit
-#[near_bindgen]
-impl MFTTokenReceiver for Contract {
-    /// Callback on receiving tokens by this contract.
-    fn mft_on_transfer(
-        &mut self,
-        token_id: String,
-        sender_id: AccountId,
-        amount: U128,
-        msg: String,
-    ) -> PromiseOrValue<U128> {
-        let seed_id: String;
-        match parse_token_id(token_id.clone()) {
-            TokenOrPool::Pool(pool_id) => {
-                seed_id = format!("{}{}{}", env::predecessor_account_id(), MFT_TAG, pool_id);
-            }
-            TokenOrPool::Token(_) => {
-                // for seed deposit, using mft to transfer 'root' token is not supported.
-                env::panic(ERR35_ILLEGAL_TOKEN_ID.as_bytes());
-            }
-        }
-
-        assert!(msg.is_empty(), "ERR_MSG_INCORRECT");
-
-        // if seed not exist, it will panic
-        let amount: u128 = amount.into();
-        let seed_farm = self.get_seed(&seed_id);
-
-        assert_eq!(seed_farm.get_ref().seed_type, SeedType::MFT, "Cannot deposit MFT to this seed");
-
-        if amount < seed_farm.get_ref().min_deposit {
-            env::panic(
-                format!(
-                    "{} {}",
-                    ERR34_BELOW_MIN_SEED_DEPOSITED,
-                    seed_farm.get_ref().min_deposit
-                )
-                .as_bytes(),
-            )
-        }
-
-        self.internal_seed_deposit(&seed_id, &sender_id, amount, SeedType::MFT);
-
-        self.assert_storage_usage(&sender_id);
-
-        env::log(
-            format!(
-                "{} deposit MFT seed {} with amount {}.",
-                sender_id, seed_id, amount,
-            )
-            .as_bytes(),
-        );
-
-        PromiseOrValue::Value(U128(0))
-    }
-}
-
 // Receiving NFTs
 #[near_bindgen]
 impl NonFungibleTokenReceiver for Contract {
     fn nft_on_transfer(
         &mut self,
-        sender_id: AccountId,
+        _sender_id: AccountId,
         previous_owner_id: AccountId,
         token_id: TokenId,
         msg: String,

@@ -2,7 +2,7 @@ use near_sdk_sim::{call, init_simulator, to_yocto, view, DEFAULT_GAS};
 use near_sdk::json_types::{U128};
 use near_sdk::serde_json::Value;
 
-use ref_farming::{HRSimpleFarmTerms};
+use ref_farming::HRSimpleFarmTerms;
 
 use crate::common::utils::*;
 use crate::common::init::{deploy_farming, deploy_nft_contract};

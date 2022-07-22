@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
-use near_sdk::{AccountId};
-use near_sdk::json_types::{ValidAccountId};
+use near_sdk::AccountId;
+use near_sdk::json_types::ValidAccountId;
 
 
 pub(crate) fn dai() -> AccountId {
