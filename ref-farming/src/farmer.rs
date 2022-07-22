@@ -131,16 +131,17 @@ impl Farmer {
         }
     }
 
-    pub fn sub_nft(&mut self, seed_id: &SeedId, contract_nft_token_id: ContractNFTTokenId ) -> Option<ContractNFTTokenId> {
+    pub fn sub_nft(&mut self, seed_id: &SeedId, contract_nft_token_id: ContractNFTTokenId ) -> ContractNFTTokenId {
         let mut nft_token_id_exist: bool = false;
         if let Some(nft_contract_seed) = self.nft_seeds.get_mut(seed_id) {
             nft_token_id_exist = nft_contract_seed.remove(&contract_nft_token_id);
         }
-        if nft_token_id_exist {
-            Some(contract_nft_token_id)
-        } else {
-            None
+
+        if !nft_token_id_exist {
+            env::panic(format!("{}", ERR51_SUB_NFT_IS_NOT_EXIST).as_bytes());
         }
+
+        contract_nft_token_id
     }
 }
 

@@ -461,7 +461,7 @@ impl Contract {
 
         // sub nft
         let contract_nft_token_id : ContractNFTTokenId = format!("{}{}{}", nft_contract_id, NFT_DELIMETER, nft_token_id);
-        farmer.get_ref_mut().sub_nft(seed_id, contract_nft_token_id.clone()).unwrap();
+        farmer.get_ref_mut().sub_nft(seed_id, contract_nft_token_id.clone());
         let nft_balance = self.data().nft_balance_seeds.get(&seed_id).unwrap();
         let nft_balance_equivalent: Balance = get_nft_balance_equivalent(nft_balance, contract_nft_token_id.clone()).unwrap();
 
