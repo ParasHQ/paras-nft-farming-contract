@@ -9,16 +9,13 @@ use std::collections::HashMap;
 use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{env, AccountId, Balance};
-use crate::{SeedId, FarmId, RPS, Contract};
-use crate::simple_farm::{ContractNFTTokenId, NFTTokenId};
+use crate::{SeedId, FarmId, RPS};
+use crate::simple_farm::ContractNFTTokenId;
 use crate::errors::*;
-use crate::utils::{MAX_ACCOUNT_LENGTH, PARAS_SERIES_DELIMETER};
+use crate::utils::MAX_ACCOUNT_LENGTH;
 use crate::StorageKeys;
-use crate::utils::NFT_DELIMETER;
 
 use near_sdk::collections::UnorderedSet;
-use near_sdk::json_types::U128;
-use crate::farm_seed::FarmSeed;
 
 /// each entry cost MAX_ACCOUNT_LENGTH bytes,
 /// amount: Balance cost 16 bytes

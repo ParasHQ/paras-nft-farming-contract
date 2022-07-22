@@ -8,7 +8,6 @@ use crate::utils::{ext_fungible_token, ext_self, GAS_FOR_FT_TRANSFER, GAS_FOR_RE
 use crate::errors::*;
 use crate::*;
 use uint::construct_uint;
-use crate::token_receiver::TokenId;
 
 construct_uint! {
     /// 256-bit unsigned integer.

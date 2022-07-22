@@ -1,6 +1,6 @@
 
 use near_sdk::{env, near_bindgen, Promise};
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use simple_farm::{SimpleFarm, HRSimpleFarmTerms};
 use crate::utils::{gen_farm_id, MIN_SEED_DEPOSIT, parse_farm_id};
 use crate::errors::*;

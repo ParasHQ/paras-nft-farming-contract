@@ -4,13 +4,13 @@
 * lib.rs is the main entry point.
 */
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::json_types::{ValidAccountId};
+use near_sdk::json_types::ValidAccountId;
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::{env, near_bindgen, Balance, AccountId, PanicOnDefault};
 use near_sdk::BorshStorageKey;
 
 use crate::farm::{Farm, FarmId};
-use crate::simple_farm::{RPS};
+use crate::simple_farm::RPS;
 use crate::farm_seed::{VersionedFarmSeed, SeedId, NftBalance};
 use crate::farmer::{VersionedFarmer, Farmer};
 
@@ -154,21 +154,21 @@ impl Contract {
     fn data(&self) -> &ContractData {
         match &self.data {
             VersionedContractData::CurrentV2(data) => data,
-            VersionedContractData::Current(data) => unimplemented!(),
+            VersionedContractData::Current(_) => unimplemented!(),
         }
     }
 
     fn data_mut(&mut self) -> &mut ContractData {
         match &mut self.data {
             VersionedContractData::CurrentV2(data) => data,
-            VersionedContractData::Current(data) => unimplemented!(),
+            VersionedContractData::Current(_) => unimplemented!(),
         }
     }
 
     fn need_upgrade(&self) -> bool {
         match &self.data {
-            VersionedContractData::CurrentV2(data) => false,
-            VersionedContractData::Current(data) => true
+            VersionedContractData::CurrentV2(_) => false,
+            VersionedContractData::Current(_) => true
         }
     }
 }
@@ -180,7 +180,7 @@ mod tests {
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::{testing_env, Balance, MockedBlockchain};
     use near_sdk::json_types::{ValidAccountId, U128};
-    use simple_farm::{HRSimpleFarmTerms};
+    use simple_farm::HRSimpleFarmTerms;
     use near_contract_standards::storage_management::{StorageBalance, StorageManagement};
 
     use super::utils::*;
@@ -211,7 +211,7 @@ mod tests {
             reward_token: reward.into(),
             start_at: 0,
             reward_per_session: U128(session_amount),
-            session_interval: session_interval,
+            session_interval,
         }, Some(U128(10)), None, None)
     }
 

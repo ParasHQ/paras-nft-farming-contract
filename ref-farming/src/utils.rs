@@ -1,12 +1,10 @@
 
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use near_sdk::{Balance, env, ext_contract, Gas, Timestamp};
 use uint::construct_uint;
 use crate::{SeedId, FarmId, NftBalance};
 use crate::errors::*;
-use crate::farm_seed::{FarmSeed, NFTTokenId};
 use crate::simple_farm::ContractNFTTokenId;
-use std::collections::HashMap;
 
 pub type TimestampSec = u32;
 
@@ -132,7 +130,7 @@ pub fn get_nft_balance_equivalent(
 ) -> Option<Balance> {
     // split x.paras.near@1:1
     // to "x.paras.near@1", ":1"
-    let mut result: Option<Balance> = None;
+    let result: Option<Balance>;
 
     if let Some(nft_balance_equivalent) = nft_balance.get(&nft_staked.to_string()) {
         result = Some(nft_balance_equivalent.0);

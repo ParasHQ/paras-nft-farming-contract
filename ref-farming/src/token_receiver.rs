@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::farm_seed::SeedType;
-use crate::utils::{MFT_TAG, FT_INDEX_TAG};
+use crate::utils::MFT_TAG;
 use crate::*;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -208,7 +208,7 @@ impl MFTTokenReceiver for Contract {
 impl NonFungibleTokenReceiver for Contract {
     fn nft_on_transfer(
         &mut self,
-        sender_id: AccountId,
+        _sender_id: AccountId,
         previous_owner_id: AccountId,
         token_id: TokenId,
         msg: String,

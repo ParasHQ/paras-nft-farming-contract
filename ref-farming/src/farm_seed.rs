@@ -3,15 +3,14 @@
 
 use std::collections::HashSet;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{Balance};
+use near_sdk::Balance;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use crate::errors::*;
 use crate::farm::FarmId;
 use crate::utils::parse_seed_id;
 use std::collections::HashMap;
-use near_sdk::collections::LookupMap;
-use crate::{Contract, StorageKeys};
+use crate::Contract;
 
 
 /// For MFT, SeedId composes of token_contract_id 

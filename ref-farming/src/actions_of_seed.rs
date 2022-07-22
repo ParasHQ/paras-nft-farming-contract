@@ -1,6 +1,6 @@
 
 use std::convert::TryInto;
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance, PromiseResult};
 
 use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent};
@@ -9,7 +9,6 @@ use crate::farm_seed::SeedType;
 use crate::*;
 use crate::simple_farm::{NFTTokenId, ContractNFTTokenId};
 use crate::utils::NFT_DELIMETER;
-use std::collections::HashMap;
 
 #[near_bindgen]
 impl Contract {
@@ -297,7 +296,7 @@ impl Contract {
         seed_id: &String, 
         sender_id: &AccountId, 
         amount: Balance, 
-        seed_type: SeedType) {
+        _seed_type: SeedType) {
 
         // first claim all reward of the user for this seed farms
         // to update user reward_per_seed in each farm
@@ -330,7 +329,7 @@ impl Contract {
         &mut self,
         seed_id: &String,
         sender_id: &AccountId,
-        is_deposit_seed_reward: bool,
+        _is_deposit_seed_reward: bool,
     ) {
         self.internal_claim_user_reward_by_seed_id(&sender_id, seed_id);
 
