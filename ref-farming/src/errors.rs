@@ -22,6 +22,7 @@ pub const ERR41_FARM_NOT_EXIST: &str = "E41: farm not exist";
 pub const ERR42_INVALID_FARM_ID: &str = "E42: invalid farm id";
 pub const ERR43_INVALID_FARM_STATUS: &str = "E43: invalid farm status";
 pub const ERR44_INVALID_FARM_REWARD: &str = "E44: invalid reward token for this farm";
-pub const ERR45_SEED_TYPE_IS_NOT_MATCHED: &str = "E44: seed type is not matched";
+pub const ERR45_SEED_TYPE_IS_NOT_MATCHED: &str = "E45: seed type is not matched";
+pub const ERR46_SUB_NFT_TOKEN_ID_IS_NOT_EXIST: &str = "E46: sub nft token id is not exist";
 
 pub const ERR500: &str = "E500: Internal ERROR!";
