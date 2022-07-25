@@ -9,16 +9,13 @@ use std::collections::HashMap;
 use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{env, AccountId, Balance};
-use crate::{SeedId, FarmId, RPS, Contract};
-use crate::simple_farm::{ContractNFTTokenId, NFTTokenId};
+use crate::{SeedId, FarmId, RPS};
+use crate::simple_farm::ContractNFTTokenId;
 use crate::errors::*;
-use crate::utils::{MAX_ACCOUNT_LENGTH, PARAS_SERIES_DELIMETER};
+use crate::utils::MAX_ACCOUNT_LENGTH;
 use crate::StorageKeys;
-use crate::utils::NFT_DELIMETER;
 
 use near_sdk::collections::UnorderedSet;
-use near_sdk::json_types::U128;
-use crate::farm_seed::FarmSeed;
 
 /// each entry cost MAX_ACCOUNT_LENGTH bytes,
 /// amount: Balance cost 16 bytes
@@ -134,16 +131,17 @@ impl Farmer {
         }
     }
 
-    pub fn sub_nft(&mut self, seed_id: &SeedId, contract_nft_token_id: ContractNFTTokenId ) -> Option<ContractNFTTokenId> {
+    pub fn sub_nft(&mut self, seed_id: &SeedId, contract_nft_token_id: ContractNFTTokenId ) -> ContractNFTTokenId {
         let mut nft_token_id_exist: bool = false;
         if let Some(nft_contract_seed) = self.nft_seeds.get_mut(seed_id) {
             nft_token_id_exist = nft_contract_seed.remove(&contract_nft_token_id);
         }
-        if nft_token_id_exist {
-            Some(contract_nft_token_id)
-        } else {
-            None
+
+        if !nft_token_id_exist {
+            env::panic(format!("{}", ERR51_SUB_NFT_IS_NOT_EXIST).as_bytes());
         }
+
+        contract_nft_token_id
     }
 }
 

@@ -1,15 +1,15 @@
 
 use super::utils::to_va;
 
-use near_sdk::{AccountId};
+use near_sdk::AccountId;
 use near_sdk_sim::{call, deploy, to_yocto, ContractAccount, UserAccount, DEFAULT_GAS};
 use near_sdk::serde_json::json;
 
 // use near_sdk_sim::transaction::ExecutionStatus;
 
 use test_token::ContractContract as TestToken;
-use ref_farming::{ContractContract as Farming};
-use test_nft::{ContractContract as TestNFT, Contract};
+use ref_farming::ContractContract as Farming;
+use test_nft::ContractContract as TestNFT;
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -81,11 +81,12 @@ pub fn deploy_token(
     t
 }
 
+#[allow(dead_code)]
 pub fn deploy_nft_contract(
     root: &UserAccount,
     nft_token_id: AccountId,
     farmer_id: AccountId,
-) -> (ContractAccount<TestNFT>) {
+) -> ContractAccount<TestNFT> {
     // uses default values for deposit and gas
     let nft = deploy!(
         // Contract Proxy

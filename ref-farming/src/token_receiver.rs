@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::farm_seed::SeedType;
-use crate::utils::{MFT_TAG, FT_INDEX_TAG};
+use crate::utils::MFT_TAG;
 use crate::*;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -31,12 +31,13 @@ impl FungibleTokenReceiver for Contract {
     ) -> PromiseOrValue<U128> {
         let sender: AccountId = sender_id.into();
         let amount: u128 = amount.into();
+        let ft_contract_id = env::predecessor_account_id();
 
         if msg.is_empty() {
             // ****** seed Token deposit in ********
 
             // if seed not exist, it will panic
-            let seed_farm = self.get_seed(&env::predecessor_account_id());
+            let seed_farm = self.get_seed(&ft_contract_id);
 
             assert_eq!(seed_farm.get_ref().seed_type, SeedType::FT, "Cannot deposit FT to this seed");
 
@@ -52,7 +53,7 @@ impl FungibleTokenReceiver for Contract {
             }
 
             self.internal_seed_deposit(
-                &env::predecessor_account_id(),
+                &ft_contract_id,
                 &sender,
                 amount.into(),
                 SeedType::FT,
@@ -64,7 +65,7 @@ impl FungibleTokenReceiver for Contract {
                 format!(
                     "{} deposit FT seed {} with amount {}.",
                     sender,
-                    env::predecessor_account_id(),
+                    ft_contract_id,
                     amount,
                 )
                 .as_bytes(),
@@ -213,6 +214,8 @@ impl NonFungibleTokenReceiver for Contract {
         token_id: TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
+        let _ = sender_id;
+
         let nft_contract_id = env::predecessor_account_id();
         let signer_id = env::signer_account_id();
 

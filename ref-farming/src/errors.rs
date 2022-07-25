@@ -24,4 +24,7 @@ pub const ERR42_INVALID_FARM_ID: &str = "E42: invalid farm id";
 pub const ERR43_INVALID_FARM_STATUS: &str = "E43: invalid farm status";
 pub const ERR44_INVALID_FARM_REWARD: &str = "E44: invalid reward token for this farm";
 
+// nft errors //
+pub const ERR51_SUB_NFT_IS_NOT_EXIST: &str = "E51: sub nft is not exist";
+
 pub const ERR500: &str = "E500: Internal ERROR!";
