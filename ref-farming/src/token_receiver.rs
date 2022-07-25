@@ -209,11 +209,13 @@ impl MFTTokenReceiver for Contract {
 impl NonFungibleTokenReceiver for Contract {
     fn nft_on_transfer(
         &mut self,
-        _sender_id: AccountId,
+        sender_id: AccountId,
         previous_owner_id: AccountId,
         token_id: TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
+        let _ = sender_id;
+
         let nft_contract_id = env::predecessor_account_id();
         let signer_id = env::signer_account_id();
 
