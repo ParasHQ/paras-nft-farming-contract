@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance, PromiseResult};
 
-use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent};
+use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, to_sec};
 use crate::errors::*;
 use crate::farm_seed::SeedType;
 use crate::*;
@@ -101,6 +101,68 @@ impl Contract {
                     ));
             }
         }
+    }
+
+    #[payable]
+    pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: Balance, duration: u32){
+        assert_one_yocto();
+
+        let current_block_time = to_sec(env::block_timestamp());
+        let ended_at = current_block_time + duration;
+
+        if !self.is_seed_type(&seed_id, SeedType::FT){
+            // TODO define error
+            env::panic(format!("{}", "seed type is not FT").as_bytes());
+        } 
+
+        let mut farmer = self.get_farmer(&env::predecessor_account_id());
+        
+        let user_balance = &farmer.get_ref().get_seed_balance(&seed_id);
+        if user_balance < &amount{
+            // TODO define error
+            env::panic(format!("{}", "amount is less than of total user balance").as_bytes());
+        } 
+
+        if let Some(previous_locked_seed) = farmer.get_ref().locked_seeds.get(&seed_id){
+            if previous_locked_seed.ended_at > ended_at{
+                // TODO define error
+                env::panic(format!("{}", "duration is less than the previous locked balance").as_bytes());
+            }
+        } 
+
+        farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, amount, ended_at);
+    }
+
+    #[payable]
+    pub fn unlock_ft_balance(&mut self, seed_id: SeedId){
+        assert_one_yocto();
+
+        let current_block_time = to_sec(env::block_timestamp());
+
+        if !self.is_seed_type(&seed_id, SeedType::FT){
+            // TODO define error
+            env::panic(format!("{}", "seed type is not FT").as_bytes());
+        } 
+
+        let mut farmer = self.get_farmer(&env::predecessor_account_id());
+        if let Some(locked_seed) = farmer.get_ref().locked_seeds.get(&seed_id){
+            if locked_seed.ended_at < current_block_time{
+                // TODO define error
+                env::panic(format!("{}", "user cannot unlock seed before the ended_at reached").as_bytes());
+            }
+
+            farmer.get_ref_mut().locked_seeds.remove(&seed_id);
+        } else {
+            // TODO define error
+            env::panic(format!("{}", "user does not have locked seed").as_bytes());
+        }
+
+        // TODO validate
+        // 1. seedId is vali
+
+        // TODO flow
+        // 1. user should be has a locked balance.
+        // 2. delete the locked balance, so the user's can withdraw all of the seeds balance 
     }
 
     #[private]
@@ -289,6 +351,16 @@ impl Contract {
         } else {
             None
         }
+    }
+
+    #[inline]
+    pub(crate) fn is_seed_type(&self, seed_id: &String, seed_type: SeedType) -> bool {
+        if let Some(farm_seed) = self.data().seeds.get(seed_id) {
+            if farm_seed.get_ref().seed_type == seed_type{
+                return true
+            }
+        }
+        return false
     }
 
     pub(crate) fn internal_seed_deposit(
