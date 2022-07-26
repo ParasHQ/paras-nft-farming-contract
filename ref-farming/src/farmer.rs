@@ -10,7 +10,6 @@ use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use near_sdk::{env, AccountId, Balance};
-use near_sdk_sim::version::Version;
 use crate::{SeedId, FarmId, RPS};
 use crate::simple_farm::ContractNFTTokenId;
 use crate::errors::*;
