@@ -10,6 +10,7 @@ use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use near_sdk::{env, AccountId, Balance};
+use near_sdk_sim::version::Version;
 use crate::{SeedId, FarmId, RPS};
 use crate::simple_farm::ContractNFTTokenId;
 use crate::errors::*;
@@ -26,7 +27,7 @@ pub const MIN_FARMER_LENGTH: u128 = MAX_ACCOUNT_LENGTH + 16 + 4 * 3;
 /// Account deposits information and storage cost (LEGACY).
 #[derive(BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "test", derive(Clone))]
-pub struct Farmer101 {
+pub struct FarmerV101 {
     pub farmer_id: AccountId,
     /// Native NEAR amount sent to this contract.
     /// Used for storage.
@@ -39,6 +40,26 @@ pub struct Farmer101 {
     pub user_rps: LookupMap<FarmId, RPS>,
     pub rps_count: u32,
     pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
+}
+
+impl From<FarmerV101> for Farmer{
+    fn from (f: FarmerV101) -> Self{
+        let FarmerV101 { farmer_id, amount, rewards, seeds, user_rps, rps_count, nft_seeds } = f;
+
+        Self{
+            farmer_id,
+            amount,
+            rewards,
+            seeds,
+            user_rps,
+            rps_count,
+            nft_seeds,
+
+            // added new locked seeds 
+            locked_seeds: HashMap::new()
+        }
+
+    }
 }
 
 #[derive(Serialize, BorshSerialize, BorshDeserialize, Default)]
@@ -207,7 +228,7 @@ impl Farmer {
 /// each function of this enum should be carefully re-code!
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedFarmer {
-    V101(Farmer101),
+    V101(FarmerV101),
     V102(Farmer),
 }
 
@@ -231,20 +252,8 @@ impl VersionedFarmer {
     /// Upgrades from other versions to the currently used version.
     pub fn upgrade(self) -> Self {
         match self {
-            VersionedFarmer::V101(farmer) => {
-                let farmer_v2 = Farmer{
-                    farmer_id: farmer.farmer_id,
-                    amount: farmer.amount,
-                    rewards: farmer.rewards,
-                    seeds: farmer.seeds,
-                    user_rps: farmer.user_rps,
-                    rps_count: farmer.rps_count,
-                    nft_seeds: farmer.nft_seeds,
-
-                    // add new locked seeds 
-                    locked_seeds: HashMap::new()
-                };
-                VersionedFarmer::V102(farmer_v2)
+            VersionedFarmer::V101(farmer_v101) => {
+                VersionedFarmer::V102(Farmer::from(farmer_v101))
             },
             VersionedFarmer::V102(farmer) => VersionedFarmer::V102(farmer),
         }
