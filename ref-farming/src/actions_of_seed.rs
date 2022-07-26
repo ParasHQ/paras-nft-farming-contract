@@ -106,63 +106,15 @@ impl Contract {
     #[payable]
     pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: Balance, duration: u32){
         assert_one_yocto();
-
-        let current_block_time = to_sec(env::block_timestamp());
-        let ended_at = current_block_time + duration;
-
-        if !self.is_seed_type(&seed_id, SeedType::FT){
-            // TODO define error
-            env::panic(format!("{}", "seed type is not FT").as_bytes());
-        } 
-
-        let mut farmer = self.get_farmer(&env::predecessor_account_id());
-        
-        let user_balance = &farmer.get_ref().get_seed_balance(&seed_id);
-        if user_balance < &amount{
-            // TODO define error
-            env::panic(format!("{}", "amount is less than of total user balance").as_bytes());
-        } 
-
-        if let Some(previous_locked_seed) = farmer.get_ref().locked_seeds.get(&seed_id){
-            if previous_locked_seed.ended_at > ended_at{
-                // TODO define error
-                env::panic(format!("{}", "duration is less than the previous locked balance").as_bytes());
-            }
-        } 
-
-        farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, amount, ended_at);
+        let sender_id = &env::predecessor_account_id();
+        self.internal_lock_ft_balance(&seed_id, sender_id, &amount, &duration)
     }
 
     #[payable]
     pub fn unlock_ft_balance(&mut self, seed_id: SeedId){
         assert_one_yocto();
-
-        let current_block_time = to_sec(env::block_timestamp());
-
-        if !self.is_seed_type(&seed_id, SeedType::FT){
-            // TODO define error
-            env::panic(format!("{}", "seed type is not FT").as_bytes());
-        } 
-
-        let mut farmer = self.get_farmer(&env::predecessor_account_id());
-        if let Some(locked_seed) = farmer.get_ref().locked_seeds.get(&seed_id){
-            if locked_seed.ended_at < current_block_time{
-                // TODO define error
-                env::panic(format!("{}", "user cannot unlock seed before the ended_at reached").as_bytes());
-            }
-
-            farmer.get_ref_mut().locked_seeds.remove(&seed_id);
-        } else {
-            // TODO define error
-            env::panic(format!("{}", "user does not have locked seed").as_bytes());
-        }
-
-        // TODO validate
-        // 1. seedId is vali
-
-        // TODO flow
-        // 1. user should be has a locked balance.
-        // 2. delete the locked balance, so the user's can withdraw all of the seeds balance 
+        let sender_id = &env::predecessor_account_id();
+        self.internal_unlock_ft_balance(sender_id, &seed_id)
     }
 
     #[private]
@@ -566,4 +518,50 @@ impl Contract {
         contract_nft_token_id
     }
 
+
+    pub fn internal_lock_ft_balance(&mut self, seed_id: &SeedId, sender_id: &AccountId, amount: &Balance, duration: &u32){
+        let current_block_time = to_sec(env::block_timestamp());
+        let ended_at = current_block_time + duration;
+
+        if !self.is_seed_type(&seed_id, SeedType::FT){
+            env::panic(format!("{}", ERR36_SEED_TYPE_IS_NOT_FT).as_bytes());
+        } 
+
+        let mut farmer = self.get_farmer(&sender_id);
+        
+        let user_balance = &farmer.get_ref().get_seed_balance(&seed_id);
+        if user_balance < &amount{
+            env::panic(format!("{}", ERR37_BALANCE_IS_NOT_ENOUGH).as_bytes());
+        } 
+
+        if let Some(previous_locked_seed) = farmer.get_ref().locked_seeds.get(seed_id){
+            if previous_locked_seed.ended_at > ended_at{
+                env::panic(format!("{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT).as_bytes());
+            }
+        } 
+
+        farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, ended_at);
+    }
+
+
+    pub fn internal_unlock_ft_balance(&mut self, sender_id: &AccountId, seed_id: &SeedId){
+        assert_one_yocto();
+
+        let current_block_time = to_sec(env::block_timestamp());
+
+        if !self.is_seed_type(&seed_id, SeedType::FT){
+            env::panic(format!("{}", ERR36_SEED_TYPE_IS_NOT_FT).as_bytes());
+        } 
+
+        let mut farmer = self.get_farmer(&sender_id);
+        if let Some(locked_seed) = farmer.get_ref().locked_seeds.get(seed_id){
+            if locked_seed.ended_at < current_block_time{
+                env::panic(format!("{}", ERR39_USER_CANNOT_UNLOCK_SEED).as_bytes());
+            }
+
+            farmer.get_ref_mut().locked_seeds.remove(seed_id);
+        } else {
+            env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
+        }
+    }
 }

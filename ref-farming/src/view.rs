@@ -7,6 +7,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 
 use crate::farm_seed::SeedInfo;
+use crate::farmer::LockedSeed;
 use crate::utils::{parse_farm_id, PARAS_SERIES_DELIMETER, NFT_DELIMETER};
 use crate::simple_farm::DENOM;
 use crate::*;
@@ -253,6 +254,19 @@ impl Contract {
                 .seeds
                 .into_iter()
                 .map(|(seed, bal)| (seed.clone(), U128(bal)))
+                .collect()
+        } else {
+            HashMap::new()
+        }
+    }
+
+    pub fn list_user_locked_seeds(&self, account_id: ValidAccountId) -> HashMap<SeedId, LockedSeed> {
+        if let Some(farmer) = self.get_farmer_wrapped(account_id.as_ref()) {
+            farmer
+                .get()
+                .locked_seeds
+                .into_iter()
+                .map(|(seed, locked_seed)| (seed.clone(), locked_seed))
                 .collect()
         } else {
             HashMap::new()

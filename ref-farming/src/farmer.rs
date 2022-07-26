@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::serde::Serialize;
 use near_sdk::{env, AccountId, Balance};
 use crate::{SeedId, FarmId, RPS};
 use crate::simple_farm::ContractNFTTokenId;
@@ -40,8 +41,9 @@ pub struct Farmer101 {
     pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Default)]
+#[derive(Serialize, BorshSerialize, BorshDeserialize, Default)]
 #[cfg_attr(feature = "test", derive(Clone))]
+#[serde(crate = "near_sdk::serde")]
 pub struct LockedSeed {
     pub balance: Balance,
     pub ended_at: TimestampSec 
@@ -106,7 +108,16 @@ impl Farmer {
     /// return seed remained.
     pub fn sub_seed(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
         let prev_balance = self.seeds.get(seed_id).expect(&format!("{}", ERR31_SEED_NOT_EXIST));
-        assert!(prev_balance >= &amount, "{}", ERR32_NOT_ENOUGH_SEED);
+        
+        let mut locked_balance = 0;
+        if let Some(locked_seed) = self.locked_seeds.get(seed_id){
+            locked_balance = locked_seed.balance;
+        }
+
+        // the total previous balance is current balance - locked balance
+        let total_prev_balance = &(prev_balance - locked_balance);
+        assert!(total_prev_balance >= &amount, "{}", ERR32_NOT_ENOUGH_SEED);
+
         let cur_balance = prev_balance - amount;
         if cur_balance > 0 {
             self.seeds.insert(seed_id.clone(), cur_balance);
