@@ -20,8 +20,8 @@ pub const ERR35_ILLEGAL_TOKEN_ID: &str = "E35: illegal token_id in mft_transfer_
 pub const ERR36_SEED_TYPE_IS_NOT_FT: &str = "E36: seed type is not FT";
 pub const ERR37_BALANCE_IS_NOT_ENOUGH: &str = "E37: balance is not enough";
 pub const ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT: &str = "E38: end of duration is less than previous ended at";
-pub const ERR39_USER_CANNOT_UNLOCK_SEED: &str = "E39: user's cannot unlock seed";
-pub const ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED: &str = "E40: user's does not have locked seed";
+pub const ERR39_USER_CANNOT_UNLOCK_SEED: &str = "E39: user cannot unlock seed";
+pub const ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED: &str = "E40: user does not have locked seed";
 
 // farm errors //
 pub const ERR41_FARM_NOT_EXIST: &str = "E41: farm not exist";

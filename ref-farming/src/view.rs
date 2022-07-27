@@ -7,7 +7,6 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 
 use crate::farm_seed::SeedInfo;
-use crate::farmer::LockedSeed;
 use crate::utils::{parse_farm_id, PARAS_SERIES_DELIMETER, NFT_DELIMETER};
 use crate::simple_farm::DENOM;
 use crate::*;
@@ -48,6 +47,13 @@ pub struct FarmInfo {
     pub claimed_reward: U128,
     pub unclaimed_reward: U128,
     pub beneficiary_reward: U128,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LockedSeed {
+    pub balance: U128,
+    pub ended_at: u32 
 }
 
 impl From<&Farm> for FarmInfo {
@@ -266,7 +272,10 @@ impl Contract {
                 .get()
                 .locked_seeds
                 .into_iter()
-                .map(|(seed, locked_seed)| (seed.clone(), locked_seed))
+                .map(|(seed, locked_seed)| (seed.clone(), LockedSeed{
+                    balance: locked_seed.balance.into(),
+                    ended_at: locked_seed.ended_at.into()
+                }))
                 .collect()
         } else {
             HashMap::new()

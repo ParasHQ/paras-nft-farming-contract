@@ -104,10 +104,10 @@ impl Contract {
     }
 
     #[payable]
-    pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: Balance, duration: u32){
+    pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: U128, duration: u32){
         assert_one_yocto();
         let sender_id = &env::predecessor_account_id();
-        self.internal_lock_ft_balance(&seed_id, sender_id, &amount, &duration)
+        self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration)
     }
 
     #[payable]
@@ -541,6 +541,7 @@ impl Contract {
         } 
 
         farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, ended_at);
+        self.data_mut().farmers.insert(&sender_id, &farmer);
     }
 
 
@@ -555,7 +556,7 @@ impl Contract {
 
         let mut farmer = self.get_farmer(&sender_id);
         if let Some(locked_seed) = farmer.get_ref().locked_seeds.get(seed_id){
-            if locked_seed.ended_at < current_block_time{
+            if locked_seed.ended_at > current_block_time{
                 env::panic(format!("{}", ERR39_USER_CANNOT_UNLOCK_SEED).as_bytes());
             }
 

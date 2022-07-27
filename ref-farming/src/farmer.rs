@@ -209,7 +209,7 @@ impl Farmer {
         if let Some(x) = self.locked_seeds.get_mut(seed_id) {
             *x = LockedSeed{
                 balance: x.balance + balance,
-                ended_at 
+                ended_at
             }
         } else {
             self.locked_seeds.insert(seed_id.clone(), LockedSeed{
