@@ -1,4 +1,3 @@
-use near_sdk::{Balance, Timestamp};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk_sim::{view, ContractAccount};

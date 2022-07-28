@@ -272,10 +272,18 @@ impl Contract {
                 .get()
                 .locked_seeds
                 .into_iter()
-                .map(|(seed, locked_seed)| (seed.clone(), LockedSeed{
-                    balance: locked_seed.balance.into(),
-                    ended_at: locked_seed.ended_at.into()
-                }))
+                .filter(|(seed, _)| {
+                    let farmer = self.get_farmer(&account_id.as_ref());
+                    farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed).is_some()
+                })
+                .map(|(seed, _)| {
+                    let farmer = self.get_farmer(&account_id.as_ref());
+                    let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed).unwrap();
+                    (seed, LockedSeed{
+                        balance: locked_seed.balance.into(),
+                        ended_at: locked_seed.ended_at
+                    })
+                })
                 .collect()
         } else {
             HashMap::new()

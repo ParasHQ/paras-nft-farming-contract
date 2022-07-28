@@ -403,6 +403,8 @@ impl Contract {
         let farmer_seed_remain = farmer.get_ref_mut().sub_seed(seed_id, amount);
         farm_seed.get_ref_mut().sub_amount(amount);
 
+        farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
+
         if farmer_seed_remain == 0 {
             // remove farmer rps of relative farm
             for farm_id in farm_seed.get_ref().farms.iter() {
@@ -534,7 +536,7 @@ impl Contract {
             env::panic(format!("{}", ERR37_BALANCE_IS_NOT_ENOUGH).as_bytes());
         } 
 
-        if let Some(previous_locked_seed) = farmer.get_ref().locked_seeds.get(seed_id){
+        if let Some(previous_locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
             if previous_locked_seed.ended_at > ended_at{
                 env::panic(format!("{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT).as_bytes());
             }
@@ -555,7 +557,7 @@ impl Contract {
         } 
 
         let mut farmer = self.get_farmer(&sender_id);
-        if let Some(locked_seed) = farmer.get_ref().locked_seeds.get(seed_id){
+        if let Some(locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
             if locked_seed.ended_at > current_block_time{
                 env::panic(format!("{}", ERR39_USER_CANNOT_UNLOCK_SEED).as_bytes());
             }
@@ -563,6 +565,9 @@ impl Contract {
             farmer.get_ref_mut().locked_seeds.remove(seed_id);
             self.data_mut().farmers.insert(&sender_id, &farmer);
         } else {
+            farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
+            self.data_mut().farmers.insert(&sender_id, &farmer);
+
             env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
         }
     }

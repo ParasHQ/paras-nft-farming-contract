@@ -13,7 +13,7 @@ use near_sdk::{env, AccountId, Balance};
 use crate::{SeedId, FarmId, RPS};
 use crate::simple_farm::ContractNFTTokenId;
 use crate::errors::*;
-use crate::utils::{MAX_ACCOUNT_LENGTH, TimestampSec};
+use crate::utils::{MAX_ACCOUNT_LENGTH, TimestampSec, to_sec};
 use crate::StorageKeys;
 
 use near_sdk::collections::UnorderedSet;
@@ -22,6 +22,9 @@ use near_sdk::collections::UnorderedSet;
 /// amount: Balance cost 16 bytes
 /// each empty hashmap cost 4 bytes
 pub const MIN_FARMER_LENGTH: u128 = MAX_ACCOUNT_LENGTH + 16 + 4 * 3;
+
+/// retention is used to invalidate the locked_seed when the user forgot to unlock the balance 
+pub const LOCKED_SEED_RETENTION: TimestampSec = 60 * 60 * 24;
 
 /// Account deposits information and storage cost (LEGACY).
 #[derive(BorshSerialize, BorshDeserialize)]
@@ -195,25 +198,48 @@ impl Farmer {
         contract_nft_token_id
     }
 
+    /// Return current balance - locked balanced 
     pub fn get_seed_balance(&self, seed_id: &SeedId) -> Balance {
-        // the total balance is current balance - locked balance
         let balance = self.seeds.get(seed_id).unwrap_or(&0).clone();
-        let default_locked_seed = LockedSeed::default();
-        let locked_balance = self.locked_seeds.get(seed_id).unwrap_or(&default_locked_seed).balance;
-        balance - locked_balance
+        if let Some(locked_seed) = self.get_locked_seed_with_retention_wrapped(seed_id){
+            return balance - locked_seed.balance;
+        }
+        balance
     }
 
     pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, ended_at: TimestampSec){
-        if let Some(x) = self.locked_seeds.get_mut(seed_id) {
-            *x = LockedSeed{
-                balance: x.balance + balance,
-                ended_at
+        let mut locked_seed = LockedSeed{
+            balance,
+            ended_at
+        };
+
+        if let Some(current_locked_seed) = self.get_locked_seed_with_retention_wrapped(seed_id){
+            locked_seed.balance += current_locked_seed.balance;
+        } 
+
+        self.locked_seeds.insert(seed_id.clone(), locked_seed);
+    }
+
+    /// get locked seed with retention tolerance
+    pub fn get_locked_seed_with_retention_wrapped(&self, seed_id: &SeedId) -> Option<&LockedSeed>{
+        let current_block_time = to_sec(env::block_timestamp());
+        if let Some(locked_seed) = self.locked_seeds.get(seed_id){
+            let ended_at_tolerance = locked_seed.ended_at + LOCKED_SEED_RETENTION;
+            if current_block_time > ended_at_tolerance{
+                return None;
             }
-        } else {
-            self.locked_seeds.insert(seed_id.clone(), LockedSeed{
-                balance,
-                ended_at
-            });
+            return Some(locked_seed);
+        }
+        None
+    }
+
+    pub fn delete_expired_locked_seed(&mut self, seed_id: &SeedId){
+        let current_block_time = to_sec(env::block_timestamp());
+        if let Some(locked_seed) = self.locked_seeds.get(seed_id){
+            let ended_at_tolerance = locked_seed.ended_at + LOCKED_SEED_RETENTION;
+            if current_block_time > ended_at_tolerance{
+                self.locked_seeds.remove(seed_id);
+            }
         }
     }
 }
