@@ -401,7 +401,7 @@ impl Contract {
 
         // Then update user seed and total seed of this LPT
         let farmer_seed_remain = farmer.get_ref_mut().sub_seed(seed_id, amount);
-        let _seed_remain = farm_seed.get_ref_mut().sub_amount(amount);
+        farm_seed.get_ref_mut().sub_amount(amount);
 
         if farmer_seed_remain == 0 {
             // remove farmer rps of relative farm
@@ -561,6 +561,7 @@ impl Contract {
             }
 
             farmer.get_ref_mut().locked_seeds.remove(seed_id);
+            self.data_mut().farmers.insert(&sender_id, &farmer);
         } else {
             env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
         }

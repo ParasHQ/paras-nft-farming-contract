@@ -127,16 +127,10 @@ impl Farmer {
 
     /// return seed remained.
     pub fn sub_seed(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
-        let prev_balance = self.seeds.get(seed_id).expect(&format!("{}", ERR31_SEED_NOT_EXIST));
-        
-        let mut locked_balance = 0;
-        if let Some(locked_seed) = self.locked_seeds.get(seed_id){
-            locked_balance = locked_seed.balance;
-        }
+        self.seeds.get(seed_id).expect(&format!("{}", ERR31_SEED_NOT_EXIST));
+        let prev_balance = self.get_seed_balance(seed_id);
 
-        // the total previous balance is current balance - locked balance
-        let total_prev_balance = &(prev_balance - locked_balance);
-        assert!(total_prev_balance >= &amount, "{}", ERR32_NOT_ENOUGH_SEED);
+        assert!(prev_balance >= amount, "{}", ERR32_NOT_ENOUGH_SEED);
 
         let cur_balance = prev_balance - amount;
         if cur_balance > 0 {
@@ -202,7 +196,11 @@ impl Farmer {
     }
 
     pub fn get_seed_balance(&self, seed_id: &SeedId) -> Balance {
-        self.seeds.get(seed_id).unwrap_or(&0).clone()
+        // the total balance is current balance - locked balance
+        let balance = self.seeds.get(seed_id).unwrap_or(&0).clone();
+        let default_locked_seed = LockedSeed::default();
+        let locked_balance = self.locked_seeds.get(seed_id).unwrap_or(&default_locked_seed).balance;
+        balance - locked_balance
     }
 
     pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, ended_at: TimestampSec){

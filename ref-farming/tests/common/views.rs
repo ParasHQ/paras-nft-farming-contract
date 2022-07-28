@@ -1,3 +1,4 @@
+use near_sdk::{Balance, Timestamp};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk_sim::{view, ContractAccount};
@@ -16,6 +17,13 @@ pub struct SeedInfo {
     pub amount: U128,
     pub min_deposit: U128,
     pub nft_balance: Option<HashMap<String, U128>>
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LockedSeed {
+    pub balance: U128,
+    pub ended_at: u32
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -136,6 +144,20 @@ pub(crate) fn show_userseeds(
 ) -> HashMap<String, U128> {
     let ret = view!(farming.list_user_seeds(to_va(user_id.clone())))
         .unwrap_json::<HashMap<String, U128>>();
+    if show_print {
+        println!("User Seeds for {}: {:#?}", user_id, ret);
+    }
+    ret
+}
+
+#[allow(dead_code)]
+pub(crate) fn show_userlockedseeds(
+    farming: &ContractAccount<Farming>,
+    user_id: String,
+    show_print: bool,
+) -> HashMap<String, LockedSeed> {
+    let ret = view!(farming.list_user_locked_seeds(to_va(user_id.clone())))
+        .unwrap_json::<HashMap<String, LockedSeed>>();
     if show_print {
         println!("User Seeds for {}: {:#?}", user_id, ret);
     }
