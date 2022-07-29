@@ -1,6 +1,7 @@
 
 use std::convert::TryInto;
 use near_sdk::json_types::U128;
+use near_sdk::serde_json::json;
 use near_sdk::{AccountId, Balance, PromiseResult};
 
 use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, to_sec};
@@ -107,14 +108,34 @@ impl Contract {
     pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: U128, duration: u32){
         assert_one_yocto();
         let sender_id = &env::predecessor_account_id();
-        self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration)
+        self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration);
+
+        env::log(
+            (&json!({
+                "type": "lock_ft_balance",
+                "params": {
+                    "seed_id": &seed_id,
+                    "amount": &amount,
+                    "duration": &duration
+                }
+            })).to_string().as_bytes()
+        );
     }
 
     #[payable]
     pub fn unlock_ft_balance(&mut self, seed_id: SeedId){
         assert_one_yocto();
         let sender_id = &env::predecessor_account_id();
-        self.internal_unlock_ft_balance(sender_id, &seed_id)
+        self.internal_unlock_ft_balance(sender_id, &seed_id);
+
+        env::log(
+            (&json!({
+                "type": "unlock_ft_balance",
+                "params": {
+                    "seed_id": &seed_id,
+                }
+            })).to_string().as_bytes()
+        );
     }
 
     #[private]
