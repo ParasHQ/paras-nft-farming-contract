@@ -542,7 +542,7 @@ impl Contract {
             }
         } 
 
-        farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, ended_at);
+        farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, current_block_time, ended_at);
         self.data_mut().farmers.insert(&sender_id, &farmer);
     }
 

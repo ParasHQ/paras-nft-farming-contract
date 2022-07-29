@@ -53,6 +53,7 @@ pub struct FarmInfo {
 #[serde(crate = "near_sdk::serde")]
 pub struct LockedSeed {
     pub balance: U128,
+    pub started_at: u32,
     pub ended_at: u32 
 }
 
@@ -281,6 +282,7 @@ impl Contract {
                     let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed).unwrap();
                     (seed, LockedSeed{
                         balance: locked_seed.balance.into(),
+                        started_at: locked_seed.started_at,
                         ended_at: locked_seed.ended_at
                     })
                 })

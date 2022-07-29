@@ -69,6 +69,7 @@ impl From<FarmerV101> for Farmer{
 #[serde(crate = "near_sdk::serde")]
 pub struct LockedSeed {
     pub balance: Balance,
+    pub started_at: TimestampSec,
     pub ended_at: TimestampSec 
 }
 
@@ -207,9 +208,10 @@ impl Farmer {
         balance
     }
 
-    pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, ended_at: TimestampSec){
+    pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, started_at: TimestampSec, ended_at: TimestampSec){
         let mut locked_seed = LockedSeed{
             balance,
+            started_at,
             ended_at
         };
 
