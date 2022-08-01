@@ -132,11 +132,12 @@ impl Farmer {
     /// return seed remained.
     pub fn sub_seed(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
         self.seeds.get(seed_id).expect(&format!("{}", ERR31_SEED_NOT_EXIST));
-        let prev_balance = self.get_seed_balance(seed_id);
 
-        assert!(prev_balance >= amount, "{}", ERR32_NOT_ENOUGH_SEED);
+        let available_balance = self.get_available_balance(seed_id);
+        assert!(available_balance >= amount, "{}", ERR32_NOT_ENOUGH_SEED);
 
-        let cur_balance = prev_balance - amount;
+        let user_balance = self.get_balance(seed_id);
+        let cur_balance = user_balance - amount;
         if cur_balance > 0 {
             self.seeds.insert(seed_id.clone(), cur_balance);
         } else {
@@ -200,12 +201,16 @@ impl Farmer {
     }
 
     /// Return current balance - locked balanced 
-    pub fn get_seed_balance(&self, seed_id: &SeedId) -> Balance {
+    pub fn get_available_balance(&self, seed_id: &SeedId) -> Balance {
         let balance = self.seeds.get(seed_id).unwrap_or(&0).clone();
         if let Some(locked_seed) = self.get_locked_seed_with_retention_wrapped(seed_id){
             return balance - locked_seed.balance;
         }
         balance
+    }
+
+    pub fn get_balance(&self, seed_id: &SeedId) -> Balance {
+        self.seeds.get(seed_id).unwrap_or(&0).clone()
     }
 
     pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, started_at: TimestampSec, ended_at: TimestampSec){

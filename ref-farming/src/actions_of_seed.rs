@@ -552,7 +552,7 @@ impl Contract {
 
         let mut farmer = self.get_farmer(&sender_id);
         
-        let user_balance = &farmer.get_ref().get_seed_balance(&seed_id);
+        let user_balance = &farmer.get_ref().get_available_balance(&seed_id);
         if user_balance < &amount{
             env::panic(format!("{}", ERR37_BALANCE_IS_NOT_ENOUGH).as_bytes());
         } 
