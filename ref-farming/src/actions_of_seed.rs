@@ -123,16 +123,17 @@ impl Contract {
     }
 
     #[payable]
-    pub fn unlock_ft_balance(&mut self, seed_id: SeedId){
+    pub fn unlock_ft_balance(&mut self, seed_id: SeedId, amount: U128){
         assert_one_yocto();
         let sender_id = &env::predecessor_account_id();
-        self.internal_unlock_ft_balance(sender_id, &seed_id);
+        self.internal_unlock_ft_balance(sender_id, &seed_id, &amount.into());
 
         env::log(
             (&json!({
                 "type": "unlock_ft_balance",
                 "params": {
                     "seed_id": &seed_id,
+                    "amount": &amount
                 }
             })).to_string().as_bytes()
         );
@@ -568,7 +569,7 @@ impl Contract {
     }
 
 
-    pub fn internal_unlock_ft_balance(&mut self, sender_id: &AccountId, seed_id: &SeedId){
+    pub fn internal_unlock_ft_balance(&mut self, sender_id: &AccountId, seed_id: &SeedId, amount: &Balance){
         assert_one_yocto();
 
         let current_block_time = to_sec(env::block_timestamp());
@@ -583,13 +584,14 @@ impl Contract {
                 env::panic(format!("{}", ERR39_USER_CANNOT_UNLOCK_SEED).as_bytes());
             }
 
-            farmer.get_ref_mut().locked_seeds.remove(seed_id);
+            farmer.get_ref_mut().sub_locked_seed_balance(seed_id, *amount);
             self.data_mut().farmers.insert(&sender_id, &farmer);
         } else {
-            farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
             self.data_mut().farmers.insert(&sender_id, &farmer);
 
             env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
         }
+
+        farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
     }
 }

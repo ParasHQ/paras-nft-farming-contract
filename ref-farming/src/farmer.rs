@@ -146,6 +146,25 @@ impl Farmer {
         cur_balance
     }
 
+    /// return locked seed remained.
+    pub fn sub_locked_seed_balance(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
+        let locked_seed = self.get_locked_seed_with_retention_wrapped(seed_id).expect(&format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED));
+
+        let cur_locked_balance = locked_seed.balance - amount;
+        if cur_locked_balance > 0 {
+            let curr_locked_seed = LockedSeed{
+                started_at: locked_seed.started_at,
+                ended_at: locked_seed.ended_at,
+                balance: cur_locked_balance
+            };
+            self.locked_seeds.insert(seed_id.clone(), curr_locked_seed);
+        } else {
+            self.locked_seeds.remove(seed_id);
+        }
+        
+        cur_locked_balance
+    }
+
     pub fn get_rps(&self, farm_id: &FarmId) -> RPS {
         self.user_rps.get(farm_id).unwrap_or(RPS::default()).clone()
     }
@@ -211,6 +230,12 @@ impl Farmer {
 
     pub fn get_balance(&self, seed_id: &SeedId) -> Balance {
         self.seeds.get(seed_id).unwrap_or(&0).clone()
+    }
+
+    pub fn get_locked_balance(&self, seed_id: &SeedId) -> Balance {
+        let default_locked_seed = LockedSeed::default();
+        let locked_seed = self.locked_seeds.get(seed_id).unwrap_or(&default_locked_seed);
+        locked_seed.balance
     }
 
     pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, started_at: TimestampSec, ended_at: TimestampSec){
