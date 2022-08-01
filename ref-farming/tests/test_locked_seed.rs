@@ -132,7 +132,7 @@ fn locked_seed_rewards(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("1").into()),
         deposit = 1
     );
     out_come.assert_success();
@@ -600,7 +600,7 @@ fn locked_seed_e39_user_cannot_unlock_seed(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.1").into()),
         deposit = 1
     );
     assert!(!out_come.is_ok());
@@ -686,7 +686,7 @@ fn locked_seed_e40_user_does_not_have_locked_seed(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into()),
         deposit = 1
     );
     assert!(!out_come.is_ok());
@@ -784,7 +784,7 @@ fn locked_seed_normal_withdraw(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into()),
         deposit = 1
     );
     out_come.assert_success();
@@ -992,3 +992,6 @@ fn locked_seed_withdraw_retention_locked_seed(){
     let locked_seeds = show_userlockedseeds(&farming, farmer1.account_id(), true);
     assert!(locked_seeds.get(&token1.account_id()).is_none());
 }
+
+// TODO add test locked_seed amount
+// TODO add test withdraw when seed is locked 
