@@ -150,6 +150,8 @@ impl Farmer {
     pub fn sub_locked_seed_balance(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
         let locked_seed = self.get_locked_seed_with_retention_wrapped(seed_id).expect(&format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED));
 
+        assert!(locked_seed.balance >= amount, "{}", ERR321_NOT_ENOUGH_LOCKED_SEED);
+
         let cur_locked_balance = locked_seed.balance - amount;
         if cur_locked_balance > 0 {
             let curr_locked_seed = LockedSeed{

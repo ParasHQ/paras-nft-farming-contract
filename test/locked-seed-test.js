@@ -5,6 +5,8 @@ const nearAPI = require('near-api-js')
 const JSBI = require('jsbi')
 const { error } = require('console')
 
+// TODO update unlock seed params
+
 const {
 	gas,
 	gas_max,
