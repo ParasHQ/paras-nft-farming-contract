@@ -114,6 +114,7 @@ impl Contract {
             (&json!({
                 "type": "lock_ft_balance",
                 "params": {
+                    "account_id": &sender_id,
                     "seed_id": &seed_id,
                     "amount": &amount,
                     "duration": &duration
@@ -132,6 +133,7 @@ impl Contract {
             (&json!({
                 "type": "unlock_ft_balance",
                 "params": {
+                    "account_id": &sender_id,
                     "seed_id": &seed_id,
                     "amount": &amount
                 }
