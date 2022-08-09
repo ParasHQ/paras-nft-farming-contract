@@ -1,9 +1,9 @@
 
 use std::convert::TryInto;
 use near_sdk::json_types::U128;
-use near_sdk::serde_json::json;
 use near_sdk::{AccountId, Balance, PromiseResult};
 
+use crate::event::{NearEvent, UnlockFTBalanceData, LockFTBalanceData};
 use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, to_sec};
 use crate::errors::*;
 use crate::farm_seed::SeedType;
@@ -110,17 +110,16 @@ impl Contract {
         let sender_id = &env::predecessor_account_id();
         self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration);
 
-        env::log(
-            (&json!({
-                "type": "lock_ft_balance",
-                "params": {
-                    "account_id": &sender_id,
-                    "seed_id": &seed_id,
-                    "amount": &amount,
-                    "duration": &duration
-                }
-            })).to_string().as_bytes()
-        );
+        let farmer = self.get_farmer(&sender_id);
+        let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
+        NearEvent::log_lock_ft_balance(LockFTBalanceData{
+            account_id: sender_id.to_string(),
+            seed_id: seed_id.to_string(),
+            amount: amount.0.to_string(),
+            duration,
+            started_at: locked_seed.started_at,
+            ended_at: locked_seed.ended_at,
+        });
     }
 
     #[payable]
@@ -129,16 +128,11 @@ impl Contract {
         let sender_id = &env::predecessor_account_id();
         self.internal_unlock_ft_balance(sender_id, &seed_id, &amount.into());
 
-        env::log(
-            (&json!({
-                "type": "unlock_ft_balance",
-                "params": {
-                    "account_id": &sender_id,
-                    "seed_id": &seed_id,
-                    "amount": &amount
-                }
-            })).to_string().as_bytes()
-        );
+        NearEvent::log_unlock_ft_balance(UnlockFTBalanceData{
+            account_id: sender_id.to_string(),
+            seed_id: seed_id.to_string(),
+            amount: amount.0.to_string()
+        });
     }
 
     #[private]
