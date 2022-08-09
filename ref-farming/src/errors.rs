@@ -33,4 +33,7 @@ pub const ERR44_INVALID_FARM_REWARD: &str = "E44: invalid reward token for this 
 // nft errors //
 pub const ERR51_SUB_NFT_IS_NOT_EXIST: &str = "E51: sub nft is not exist";
 
+// validation errors //
+pub const ERR401_LOCK_FT_BALANCE_DURATION_IS_NOT_VALID: &str = "E401: lock ft balance duration is not valid";
+
 pub const ERR500: &str = "E500: Internal ERROR!";

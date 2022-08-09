@@ -1,10 +1,11 @@
 
+use std::collections::HashMap;
 use std::convert::TryInto;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance, PromiseResult};
 
 use crate::event::{NearEvent, UnlockFTBalanceData, LockFTBalanceData};
-use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, to_sec};
+use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, to_sec, is_paras_farming_mainnet};
 use crate::errors::*;
 use crate::farm_seed::SeedType;
 use crate::*;
@@ -107,6 +108,9 @@ impl Contract {
     #[payable]
     pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: U128, duration: u32){
         assert_one_yocto();
+
+        self.internal_validate_lock_ft_balance_duration(&duration);
+
         let sender_id = &env::predecessor_account_id();
         self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration);
 
@@ -402,6 +406,20 @@ impl Contract {
                 reward_tokens.push(reward_token);
             }
         };
+    }
+
+    fn internal_validate_lock_ft_balance_duration(&self, duration: &u32){
+        // ignore when the contract is not deployed on paras farming mainnet
+        if !is_paras_farming_mainnet(){
+            return
+        }
+
+        let valid_durations_map: HashMap<u32, bool> = HashMap::from([
+            (60 * 60 * 24 * 30, true), // 30 days
+            (60 * 60 * 24 * 90, true), // 90 days
+        ]);
+
+        assert!(*valid_durations_map.get(duration).unwrap_or(&false), "{}", ERR401_LOCK_FT_BALANCE_DURATION_IS_NOT_VALID);
     }
 
     fn internal_seed_withdraw(

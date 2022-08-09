@@ -1,5 +1,10 @@
 use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
+use near_sdk_sim::UserAccount;
+use near_sdk_sim::near_crypto::InMemorySigner;
+use near_sdk_sim::runtime::{GenesisConfig, RuntimeStandalone};
 use near_sdk_sim::{call, init_simulator, to_yocto};
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::Value;
@@ -1222,4 +1227,127 @@ fn locked_seed_without_unlock_balance(){
 
     let user_seeds = show_userseeds(&farming, farmer1.account_id(), false);
     assert_eq!(user_seeds.get(&String::from("dai")).unwrap().0, to_yocto("0.1"));
+}
+
+pub fn init_runtime_near(
+    genesis_config: Option<GenesisConfig>,
+) -> (RuntimeStandalone, InMemorySigner, String) {
+    let mut genesis = genesis_config.unwrap_or_default();
+    genesis.runtime_config.wasm_config.limit_config.max_total_prepaid_gas = genesis.gas_limit;
+    let root_account_id = "near".to_string();
+    let signer = genesis.init_root_signer(&root_account_id);
+    let runtime = RuntimeStandalone::new_with_store(genesis);
+    (runtime, signer, root_account_id)
+}
+
+// init custom simulator with "near" as root account
+pub fn init_simulator_near(genesis_config: Option<GenesisConfig>) -> UserAccount {
+    let (runtime, signer, root_account_id) = init_runtime_near(genesis_config);
+    UserAccount::new(&Rc::new(RefCell::new(runtime)), root_account_id, signer)
+}
+
+#[test]
+fn locked_seed_validate_duration(){
+    let root = init_simulator_near(None);
+    let paras = root.create_user("paras.near".to_string(), to_yocto("1000"));
+
+    println!("----->> Prepare accounts.");
+    let owner = root.create_user("owner".to_string(), to_yocto("100"));
+    let farmer1 = root.create_user("farmer1".to_string(), to_yocto("100"));
+    println!("<<----- owner and 1 farmer prepared.");
+
+    let (_, token1, _) = prepair_pool_and_liquidity(
+         &root, &owner, "staking.paras.near".to_string(), vec![&farmer1]);
+
+    // deploy farming contract and register user
+    println!("----->> Deploy farming and register farmer.");
+    let farming = deploy_farming(&paras, "staking.paras.near".to_string(), owner.account_id());
+    call!(farmer1, farming.storage_deposit(None, None), deposit = to_yocto("1")).assert_success();
+    println!("<<----- farming deployed, farmer registered.");
+
+    // create farm
+    println!("----->> Create farm.");
+    let farm_id = "dai#0".to_string();
+    let out_come = call!(
+        owner,
+        farming.create_simple_farm(HRSimpleFarmTerms{
+            seed_id: token1.account_id(),
+            reward_token: token1.valid_account_id(),
+            start_at: 0,
+            reward_per_session: to_yocto("1").into(),
+            session_interval: 60,
+        }, None, None, None),
+        deposit = to_yocto("1")
+    );
+    out_come.assert_success();
+    assert_eq!(Value::String(farm_id.clone()), out_come.unwrap_json_value());
+    println!("<<----- Farm {} created at #{}, ts:{}.",
+             farm_id,
+             root.borrow_runtime().current_block().block_height,
+             root.borrow_runtime().current_block().block_timestamp);
+
+    // register to token1
+    println!("Register to token1 farming_id");
+    call!(
+        root,
+        token1.storage_deposit(Some(to_va("staking.paras.near".to_string())), None),
+        deposit = to_yocto("1")
+    );
+
+    mint_token(&token1, &root, to_yocto("10"));
+
+    println!("----->> Deposit reward to turn farm Running.");
+    call!(
+        root,
+        token1.ft_transfer_call(to_va("staking.paras.near".to_string()), U128(to_yocto("10")), None, farm_id.clone()),
+        deposit = 1
+    ).assert_success();
+
+    show_farminfo(&farming, farm_id.clone(), true);
+
+    println!("<<----- Farm {} deposit reward at #{}, ts:{}.",
+             farm_id,
+             root.borrow_runtime().current_block().block_height,
+             root.borrow_runtime().current_block().block_timestamp);
+
+    // farmer1 staking lpt
+    println!("----->> Farmer1 staking lpt.");
+    let out_come = call!(
+        farmer1,
+        token1.ft_transfer_call(to_va("staking.paras.near".to_string()), U128(to_yocto("1")), None, "".to_string()),
+        deposit = 1
+    );
+    out_come.assert_success();
+
+    println!("----->> Farmer1 lock ft token 30 days");
+    let _30_days_in_second: u32 = 60 * 60 * 24 * 30;
+    let out_come = call!(
+        farmer1,
+        farming.lock_ft_balance(token1.account_id(), to_yocto("0.5").into(), _30_days_in_second),
+        deposit = 1
+    );
+    out_come.assert_success();
+    println!("<<----- Farmer1 lock ft token 30 days at ts{}", root.borrow_runtime().current_block().block_timestamp);
+
+    println!("----->> Farmer1 lock ft token 90 days");
+    let _90_days_in_second: u32 = 60 * 60 * 24 * 90;
+    let out_come = call!(
+        farmer1,
+        farming.lock_ft_balance(token1.account_id(), to_yocto("0.5").into(), _90_days_in_second),
+        deposit = 1
+    );
+    out_come.assert_success();
+    println!("<<----- Farmer1 lock ft token 90 days at ts{}", root.borrow_runtime().current_block().block_timestamp);
+
+    println!("----->> Farmer1 lock ft token 91 days should be error");
+    let _90_days_in_second: u32 = 60 * 60 * 24 * 91;
+    let out_come = call!(
+        farmer1,
+        farming.lock_ft_balance(token1.account_id(), to_yocto("0.5").into(), _90_days_in_second),
+        deposit = 1
+    );
+    assert!(!out_come.is_ok());
+
+    let ex_status = format!("{:?}", out_come.promise_errors()[0].as_ref().unwrap().status());
+    assert!(ex_status.contains("E401: lock ft balance duration is not valid"));
 }
