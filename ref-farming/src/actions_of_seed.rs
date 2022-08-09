@@ -583,11 +583,10 @@ impl Contract {
             farmer.get_ref_mut().sub_locked_seed_balance(seed_id, *amount);
             self.data_mut().farmers.insert(&sender_id, &farmer);
         } else {
+            farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
             self.data_mut().farmers.insert(&sender_id, &farmer);
 
             env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
         }
-
-        farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
     }
 }
