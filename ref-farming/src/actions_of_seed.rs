@@ -543,21 +543,15 @@ impl Contract {
         let current_block_time = to_sec(env::block_timestamp());
         let ended_at = current_block_time + duration;
 
-        if !self.is_seed_type(&seed_id, SeedType::FT){
-            env::panic(format!("{}", ERR36_SEED_TYPE_IS_NOT_FT).as_bytes());
-        } 
+        assert!(self.is_seed_type(&seed_id, SeedType::FT), "{}", ERR36_SEED_TYPE_IS_NOT_FT);
 
         let mut farmer = self.get_farmer(&sender_id);
         
         let user_balance = &farmer.get_ref().get_available_balance(&seed_id);
-        if user_balance < &amount{
-            env::panic(format!("{}", ERR37_BALANCE_IS_NOT_ENOUGH).as_bytes());
-        } 
+        assert!(user_balance > &amount, "{}", ERR37_BALANCE_IS_NOT_ENOUGH);
 
         if let Some(previous_locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
-            if previous_locked_seed.ended_at > ended_at{
-                env::panic(format!("{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT).as_bytes());
-            }
+            assert!(previous_locked_seed.ended_at < ended_at, "{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT);
         } 
 
         farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, current_block_time, ended_at);
@@ -570,15 +564,11 @@ impl Contract {
 
         let current_block_time = to_sec(env::block_timestamp());
 
-        if !self.is_seed_type(&seed_id, SeedType::FT){
-            env::panic(format!("{}", ERR36_SEED_TYPE_IS_NOT_FT).as_bytes());
-        } 
+        assert!(self.is_seed_type(&seed_id, SeedType::FT), "{}", ERR36_SEED_TYPE_IS_NOT_FT);
 
         let mut farmer = self.get_farmer(&sender_id);
         if let Some(locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
-            if locked_seed.ended_at > current_block_time{
-                env::panic(format!("{}", ERR39_USER_CANNOT_UNLOCK_SEED).as_bytes());
-            }
+            assert!(locked_seed.ended_at < current_block_time, "{}", ERR39_USER_CANNOT_UNLOCK_SEED);
 
             farmer.get_ref_mut().sub_locked_seed_balance(seed_id, *amount);
             self.data_mut().farmers.insert(&sender_id, &farmer);
