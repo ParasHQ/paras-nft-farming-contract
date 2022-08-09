@@ -548,10 +548,10 @@ impl Contract {
         let mut farmer = self.get_farmer(&sender_id);
         
         let user_balance = &farmer.get_ref().get_available_balance(&seed_id);
-        assert!(user_balance > &amount, "{}", ERR37_BALANCE_IS_NOT_ENOUGH);
+        assert!(user_balance >= &amount, "{}", ERR37_BALANCE_IS_NOT_ENOUGH);
 
         if let Some(previous_locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
-            assert!(previous_locked_seed.ended_at < ended_at, "{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT);
+            assert!(previous_locked_seed.ended_at <= ended_at, "{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT);
         } 
 
         farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, current_block_time, ended_at);
@@ -568,7 +568,7 @@ impl Contract {
 
         let mut farmer = self.get_farmer(&sender_id);
         if let Some(locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
-            assert!(locked_seed.ended_at < current_block_time, "{}", ERR39_USER_CANNOT_UNLOCK_SEED);
+            assert!(locked_seed.ended_at <= current_block_time, "{}", ERR39_USER_CANNOT_UNLOCK_SEED);
 
             farmer.get_ref_mut().sub_locked_seed_balance(seed_id, *amount);
             self.data_mut().farmers.insert(&sender_id, &farmer);
