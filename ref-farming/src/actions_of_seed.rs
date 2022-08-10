@@ -414,10 +414,9 @@ impl Contract {
             return
         }
 
-        let valid_durations_map: HashMap<u32, bool> = HashMap::from([
-            (60 * 60 * 24 * 30, true), // 30 days
-            (60 * 60 * 24 * 90, true), // 90 days
-        ]);
+        let mut valid_durations_map = HashMap::new(); 
+        valid_durations_map.insert(60 * 60 * 24 * 30, true); // 30 days
+        valid_durations_map.insert(60 * 60 * 24 * 90, true); // 90 days
 
         assert!(*valid_durations_map.get(duration).unwrap_or(&false), "{}", ERR401_LOCK_FT_BALANCE_DURATION_IS_NOT_VALID);
     }
