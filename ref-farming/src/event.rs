@@ -22,8 +22,8 @@ pub struct ParasFarmingEvent {
 #[serde(rename_all = "snake_case")]
 #[allow(clippy::enum_variant_names)]
 pub enum ParasFarmingEventKind {
-    LockFtBalance(LockFTBalanceData),
-    UnlockFtBalance(UnlockFTBalanceData)
+    LockFtBalance(Vec<LockFTBalanceData>),
+    UnlockFtBalance(Vec<UnlockFTBalanceData>)
 }
 
 #[skip_serializing_none]
@@ -68,20 +68,20 @@ impl NearEvent {
         near_sdk::env::log(&self.to_string().as_bytes());
     }
 
-    pub fn lock_ft_balance(data: LockFTBalanceData) -> Self {
+    pub fn lock_ft_balance(data: Vec<LockFTBalanceData>) -> Self {
         NearEvent::new_v1(ParasFarmingEventKind::LockFtBalance(data))
     }
 
-    pub fn unlock_ft_balance(data: UnlockFTBalanceData) -> Self {
+    pub fn unlock_ft_balance(data: Vec<UnlockFTBalanceData>) -> Self {
         NearEvent::new_v1(ParasFarmingEventKind::UnlockFtBalance(data))
     }
 
     pub fn log_lock_ft_balance(data: LockFTBalanceData){
-        NearEvent::lock_ft_balance(data).log();
+        NearEvent::lock_ft_balance(vec![data]).log();
     }
 
     pub fn log_unlock_ft_balance(data: UnlockFTBalanceData){
-        NearEvent::unlock_ft_balance(data).log();
+        NearEvent::unlock_ft_balance(vec![data]).log();
     }
 }
 
@@ -99,11 +99,11 @@ mod tests {
             started_at: 1,
             ended_at: 2
         };
-        let event_log = NearEvent::lock_ft_balance(lock_ft_balance_log);
+        let event_log = NearEvent::lock_ft_balance(vec![lock_ft_balance_log]);
     
         assert_eq!(
             serde_json::to_string(&event_log).unwrap(),
-            r#"{"standard":"paras_farming","version":"1.0.0","event":"lock_ft_balance","data":{"account_id":"darmaji","seed_id":"seed_id_1","amount":"1","duration":1,"started_at":1,"ended_at":2}}"#
+            r#"{"standard":"paras_farming","version":"1.0.0","event":"lock_ft_balance","data":[{"account_id":"darmaji","seed_id":"seed_id_1","amount":"1","duration":1,"started_at":1,"ended_at":2}]}"#
         );
     }
 
@@ -114,11 +114,11 @@ mod tests {
             seed_id: "seed_id_1".to_string(),
             amount: "1".to_string(),
         };
-        let event_log = NearEvent::unlock_ft_balance(unlock_ft_balance_log);
+        let event_log = NearEvent::unlock_ft_balance(vec![unlock_ft_balance_log]);
     
         assert_eq!(
             serde_json::to_string(&event_log).unwrap(),
-            r#"{"standard":"paras_farming","version":"1.0.0","event":"unlock_ft_balance","data":{"account_id":"darmaji","seed_id":"seed_id_1","amount":"1"}}"#
+            r#"{"standard":"paras_farming","version":"1.0.0","event":"unlock_ft_balance","data":[{"account_id":"darmaji","seed_id":"seed_id_1","amount":"1"}]}"#
         );
     }
 }
