@@ -137,7 +137,7 @@ fn locked_seed_rewards(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id(), to_yocto("1").into()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("1").into(), None),
         deposit = 1
     );
     out_come.assert_success();
@@ -605,7 +605,7 @@ fn locked_seed_e39_user_cannot_unlock_seed(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.1").into()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.1").into(), None),
         deposit = 1
     );
     assert!(!out_come.is_ok());
@@ -691,7 +691,7 @@ fn locked_seed_e40_user_does_not_have_locked_seed(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into(), None),
         deposit = 1
     );
     assert!(!out_come.is_ok());
@@ -789,7 +789,7 @@ fn locked_seed_normal_withdraw(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into(), None),
         deposit = 1
     );
     out_come.assert_success();
@@ -1091,7 +1091,7 @@ fn locked_seed_unlock_x_amount_balance(){
     println!("----->> Farmer1 unlock 0.01 balance");
         let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.01").into()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.01").into(), None),
         deposit = 1
     );
     out_come.assert_success();
@@ -1207,7 +1207,7 @@ fn locked_seed_without_unlock_balance(){
     println!("----->> Farmer1 unlock ft token");
     let out_come = call!(
         farmer1,
-        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into()),
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.5").into(), None),
         deposit = 1
     );
     out_come.assert_success();
@@ -1350,4 +1350,118 @@ fn locked_seed_validate_duration(){
 
     let ex_status = format!("{:?}", out_come.promise_errors()[0].as_ref().unwrap().status());
     assert!(ex_status.contains("E401: lock ft balance duration is not valid"));
+}
+
+#[test]
+fn locked_seed_unlock_with_duration(){
+    let root = init_simulator(None);
+
+    println!("----->> Prepare accounts.");
+    let owner = root.create_user("owner".to_string(), to_yocto("100"));
+    let farmer1 = root.create_user("farmer1".to_string(), to_yocto("100"));
+    println!("<<----- owner and 1 farmer prepared.");
+
+    let (_, token1, _) = prepair_pool_and_liquidity(
+         &root, &owner, farming_id(), vec![&farmer1]);
+
+    // deploy farming contract and register user
+    println!("----->> Deploy farming and register farmer.");
+    let farming = deploy_farming(&root, farming_id(), owner.account_id());
+    call!(farmer1, farming.storage_deposit(None, None), deposit = to_yocto("1")).assert_success();
+    println!("<<----- farming deployed, farmer registered.");
+
+    // create farm
+    println!("----->> Create farm.");
+    let farm_id = "dai#0".to_string();
+    let out_come = call!(
+        owner,
+        farming.create_simple_farm(HRSimpleFarmTerms{
+            seed_id: token1.account_id(),
+            reward_token: token1.valid_account_id(),
+            start_at: 0,
+            reward_per_session: to_yocto("1").into(),
+            session_interval: 60,
+        }, None, None, None),
+        deposit = to_yocto("1")
+    );
+    out_come.assert_success();
+    assert_eq!(Value::String(farm_id.clone()), out_come.unwrap_json_value());
+    println!("<<----- Farm {} created at #{}, ts:{}.",
+             farm_id,
+             root.borrow_runtime().current_block().block_height,
+             root.borrow_runtime().current_block().block_timestamp);
+
+    // register to token1
+    println!("Register to token1 farming_id");
+    call!(
+        root,
+        token1.storage_deposit(Some(to_va(farming_id())), None),
+        deposit = to_yocto("1")
+    );
+
+    mint_token(&token1, &root, to_yocto("10"));
+
+    println!("----->> Deposit reward to turn farm Running.");
+    call!(
+        root,
+        token1.ft_transfer_call(to_va(farming_id()), U128(to_yocto("10")), None, farm_id.clone()),
+        deposit = 1
+    ).assert_success();
+
+    show_farminfo(&farming, farm_id.clone(), true);
+
+    println!("<<----- Farm {} deposit reward at #{}, ts:{}.",
+             farm_id,
+             root.borrow_runtime().current_block().block_height,
+             root.borrow_runtime().current_block().block_timestamp);
+
+    // farmer1 staking lpt
+    println!("----->> Farmer1 staking lpt.");
+    let out_come = call!(
+        farmer1,
+        token1.ft_transfer_call(to_va(farming_id()), U128(to_yocto("1")), None, "".to_string()),
+        deposit = 1
+    );
+    out_come.assert_success();
+    println!("<<----- Farmer1 staked liquidity at #{}, ts:{}.",
+             root.borrow_runtime().current_block().block_height,
+             root.borrow_runtime().current_block().block_timestamp);
+
+    println!("----->> Farmer1 lock 1st ft token");
+    let out_come = call!(
+        farmer1,
+        farming.lock_ft_balance(token1.account_id(), to_yocto("0.1").into(), 10u32),
+        deposit = 1
+    );
+    out_come.assert_success();
+    println!("<<----- Farmer1 lock 1st ft token at ts{}", root.borrow_runtime().current_block().block_timestamp);
+
+    println!("----->> Farmer1 lock 2nd ft token");
+    let out_come = call!(
+        farmer1,
+        farming.lock_ft_balance(token1.account_id(), to_yocto("0.1").into(), 100u32),
+        deposit = 1
+    );
+    out_come.assert_success();
+    println!("<<----- Farmer1 lock 2nd ft token");
+
+    println!("----->> move to 200 secs later.");
+    assert!(root.borrow_runtime_mut().produce_blocks(200).is_ok());
+    println!("<<----- Chain goes 200 blocks, now #{}, ts:{}.",
+             root.borrow_runtime().current_block().block_height,
+             root.borrow_runtime().current_block().block_timestamp);
+
+    println!("----->> Farmer1 unlock 0.01 balance");
+        let out_come = call!(
+        farmer1,
+        farming.unlock_ft_balance(token1.account_id(), to_yocto("0.01").into(), Some(100u32)),
+        deposit = 1
+    );
+    out_come.assert_success();
+    println!("<<----- Farmer1 unlock 0.01 balance");
+
+    let locked_seeds = show_userlockedseeds(&farming, farmer1.account_id(), true);
+    let locked_seed = locked_seeds.get(&token1.account_id()).unwrap();
+    assert!(locked_seed.balance == to_yocto("0.19").into());
+    assert!(locked_seed.ended_at == 400);
 }
