@@ -137,12 +137,10 @@ impl Contract {
             let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
 
             self.internal_unlock_ft_balance(sender_id, &seed_id, &locked_seed.balance);
-            if locked_seed.balance == amount.into(){
-                return;
+            if locked_seed.balance != amount.into(){
+                let relock_amount = locked_seed.balance - amount.0;
+                self.internal_lock_ft_balance(&seed_id, sender_id, &relock_amount.into(), &duration_value);
             }
-
-            let relock_amount = locked_seed.balance - amount.0;
-            self.internal_lock_ft_balance(&seed_id, sender_id, &relock_amount.into(), &duration_value);
         } else {
             self.internal_unlock_ft_balance(sender_id, &seed_id, &amount.into());
         }
