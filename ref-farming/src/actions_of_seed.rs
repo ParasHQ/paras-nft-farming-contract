@@ -112,6 +112,17 @@ impl Contract {
 
         let sender_id = &env::predecessor_account_id();
         self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration);
+
+        let farmer = self.get_farmer(&sender_id);
+        let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
+        NearEvent::log_lock_ft_balance(LockFTBalanceData{
+            account_id: sender_id.to_string(),
+            seed_id: seed_id.to_string(),
+            amount: amount.0.to_string(),
+            duration,
+            started_at: locked_seed.started_at,
+            ended_at: locked_seed.ended_at,
+        });
     }
 
     #[payable]
@@ -119,6 +130,7 @@ impl Contract {
         assert_one_yocto();
         let sender_id = &env::predecessor_account_id();
         
+
         // if the duration is specified then relock the rest of the locked balance to new periode
         if let Some(duration_value) = duration{
             let farmer = self.get_farmer(&sender_id);
@@ -134,6 +146,23 @@ impl Contract {
         } else {
             self.internal_unlock_ft_balance(sender_id, &seed_id, &amount.into());
         }
+
+        let farmer = self.get_farmer(&sender_id);
+        let mut log_unlock_ft_balance_data = UnlockFTBalanceData{
+            account_id: sender_id.to_string(),
+            seed_id: seed_id.to_string(),
+            amount: amount.0.to_string(),
+            duration,
+            started_at: None,
+            ended_at: None
+        };
+        // log new period when the locked stake is extended
+        if let Some(locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id){
+            log_unlock_ft_balance_data.started_at = Some(locked_seed.started_at);
+            log_unlock_ft_balance_data.ended_at = Some(locked_seed.ended_at);
+        }
+
+        NearEvent::log_unlock_ft_balance(log_unlock_ft_balance_data);
     }
 
     #[private]
@@ -570,16 +599,6 @@ impl Contract {
 
         farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, current_block_time, ended_at);
         self.data_mut().farmers.insert(&sender_id, &farmer);
-
-        let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
-        NearEvent::log_lock_ft_balance(LockFTBalanceData{
-            account_id: sender_id.to_string(),
-            seed_id: seed_id.to_string(),
-            amount: amount.to_string(),
-            duration: *duration,
-            started_at: locked_seed.started_at,
-            ended_at: locked_seed.ended_at,
-        });
     }
 
 
@@ -602,11 +621,5 @@ impl Contract {
 
             env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
         }
-
-        NearEvent::log_unlock_ft_balance(UnlockFTBalanceData{
-            account_id: sender_id.to_string(),
-            seed_id: seed_id.to_string(),
-            amount: amount.to_string(),
-        });
     }
 }

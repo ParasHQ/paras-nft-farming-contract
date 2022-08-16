@@ -43,6 +43,9 @@ pub struct UnlockFTBalanceData {
     pub account_id: String,
     pub seed_id: String,
     pub amount: String,
+    pub duration: Option<u32>,
+    pub started_at: Option<u32>,
+    pub ended_at: Option<u32>,
 }
 
 impl Display for NearEvent {
@@ -113,6 +116,27 @@ mod tests {
             account_id: "darmaji".to_string(),
             seed_id: "seed_id_1".to_string(),
             amount: "1".to_string(),
+            duration: Some(1),
+            started_at: Some(1),
+            ended_at: Some(1)
+        };
+        let event_log = NearEvent::unlock_ft_balance(vec![unlock_ft_balance_log]);
+    
+        assert_eq!(
+            serde_json::to_string(&event_log).unwrap(),
+            r#"{"standard":"paras_farming","version":"1.0.0","event":"unlock_ft_balance","data":[{"account_id":"darmaji","seed_id":"seed_id_1","amount":"1","duration":1,"started_at":1,"ended_at":1}]}"#
+        );
+    }
+
+    #[test]
+    fn unlock_ft_balance_non_relock() {
+        let unlock_ft_balance_log = UnlockFTBalanceData{
+            account_id: "darmaji".to_string(),
+            seed_id: "seed_id_1".to_string(),
+            amount: "1".to_string(),
+            duration: None,
+            started_at: None,
+            ended_at: None
         };
         let event_log = NearEvent::unlock_ft_balance(vec![unlock_ft_balance_log]);
     
