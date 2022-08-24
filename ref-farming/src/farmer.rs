@@ -249,6 +249,7 @@ impl Farmer {
 
         if let Some(current_locked_seed) = self.get_locked_seed_with_retention_wrapped(seed_id){
             locked_seed.balance += current_locked_seed.balance;
+            locked_seed.started_at = current_locked_seed.started_at;
         } 
 
         self.locked_seeds.insert(seed_id.clone(), locked_seed);

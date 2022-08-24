@@ -133,6 +133,8 @@ impl Contract {
 
         // if the duration is specified then relock the rest of the locked balance to new periode
         if let Some(duration_value) = duration{
+            self.internal_validate_lock_ft_balance_duration(&duration_value);
+
             let farmer = self.get_farmer(&sender_id);
             let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
 
