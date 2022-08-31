@@ -8,11 +8,12 @@
 use std::collections::HashMap;
 use near_sdk::collections::LookupMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::serde::Serialize;
 use near_sdk::{env, AccountId, Balance};
 use crate::{SeedId, FarmId, RPS};
 use crate::simple_farm::ContractNFTTokenId;
 use crate::errors::*;
-use crate::utils::MAX_ACCOUNT_LENGTH;
+use crate::utils::{MAX_ACCOUNT_LENGTH, TimestampSec, to_sec};
 use crate::StorageKeys;
 
 use near_sdk::collections::UnorderedSet;
@@ -21,6 +22,56 @@ use near_sdk::collections::UnorderedSet;
 /// amount: Balance cost 16 bytes
 /// each empty hashmap cost 4 bytes
 pub const MIN_FARMER_LENGTH: u128 = MAX_ACCOUNT_LENGTH + 16 + 4 * 3;
+
+/// retention is used to invalidate the locked_seed when the user forgot to unlock the balance 
+pub const LOCKED_SEED_RETENTION: TimestampSec = 60 * 60 * 24;
+
+/// Account deposits information and storage cost (LEGACY).
+#[derive(BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "test", derive(Clone))]
+pub struct FarmerV101 {
+    pub farmer_id: AccountId,
+    /// Native NEAR amount sent to this contract.
+    /// Used for storage.
+    pub amount: Balance,
+    /// Amounts of various reward tokens the farmer claimed.
+    pub rewards: HashMap<AccountId, Balance>,
+    /// Amounts of various seed tokens the farmer staked.
+    pub seeds: HashMap<SeedId, Balance>,
+    /// record user_last_rps of farms
+    pub user_rps: LookupMap<FarmId, RPS>,
+    pub rps_count: u32,
+    pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
+}
+
+impl From<FarmerV101> for Farmer{
+    fn from (f: FarmerV101) -> Self{
+        let FarmerV101 { farmer_id, amount, rewards, seeds, user_rps, rps_count, nft_seeds } = f;
+
+        Self{
+            farmer_id,
+            amount,
+            rewards,
+            seeds,
+            user_rps,
+            rps_count,
+            nft_seeds,
+
+            // added new locked seeds 
+            locked_seeds: HashMap::new()
+        }
+
+    }
+}
+
+#[derive(Serialize, BorshSerialize, BorshDeserialize, Default)]
+#[cfg_attr(feature = "test", derive(Clone))]
+#[serde(crate = "near_sdk::serde")]
+pub struct LockedSeed {
+    pub balance: Balance,
+    pub started_at: TimestampSec,
+    pub ended_at: TimestampSec 
+}
 
 /// Account deposits information and storage cost.
 #[derive(BorshSerialize, BorshDeserialize)]
@@ -38,6 +89,7 @@ pub struct Farmer {
     pub user_rps: LookupMap<FarmId, RPS>,
     pub rps_count: u32,
     pub nft_seeds: HashMap<SeedId, UnorderedSet<ContractNFTTokenId>>,
+    pub locked_seeds: HashMap<SeedId, LockedSeed>,
 }
 
 impl Farmer {
@@ -79,15 +131,40 @@ impl Farmer {
 
     /// return seed remained.
     pub fn sub_seed(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
-        let prev_balance = self.seeds.get(seed_id).expect(&format!("{}", ERR31_SEED_NOT_EXIST));
-        assert!(prev_balance >= &amount, "{}", ERR32_NOT_ENOUGH_SEED);
-        let cur_balance = prev_balance - amount;
+        self.seeds.get(seed_id).expect(&format!("{}", ERR31_SEED_NOT_EXIST));
+
+        let available_balance = self.get_available_balance(seed_id);
+        assert!(available_balance >= amount, "{}", ERR32_NOT_ENOUGH_SEED);
+
+        let user_balance = self.get_balance(seed_id);
+        let cur_balance = user_balance - amount;
         if cur_balance > 0 {
             self.seeds.insert(seed_id.clone(), cur_balance);
         } else {
             self.seeds.remove(seed_id);
         }
         cur_balance
+    }
+
+    /// return locked seed remained.
+    pub fn sub_locked_seed_balance(&mut self, seed_id: &SeedId, amount: Balance) -> Balance {
+        let locked_seed = self.get_locked_seed_with_retention_wrapped(seed_id).expect(&format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED));
+
+        assert!(locked_seed.balance >= amount, "{}", ERR321_NOT_ENOUGH_LOCKED_SEED);
+
+        let cur_locked_balance = locked_seed.balance - amount;
+        if cur_locked_balance > 0 {
+            let curr_locked_seed = LockedSeed{
+                started_at: locked_seed.started_at,
+                ended_at: locked_seed.ended_at,
+                balance: cur_locked_balance
+            };
+            self.locked_seeds.insert(seed_id.clone(), curr_locked_seed);
+        } else {
+            self.locked_seeds.remove(seed_id);
+        }
+        
+        cur_locked_balance
     }
 
     pub fn get_rps(&self, farm_id: &FarmId) -> RPS {
@@ -143,6 +220,62 @@ impl Farmer {
 
         contract_nft_token_id
     }
+
+    /// Return current balance - locked balanced 
+    pub fn get_available_balance(&self, seed_id: &SeedId) -> Balance {
+        let balance = self.seeds.get(seed_id).unwrap_or(&0).clone();
+        if let Some(locked_seed) = self.get_locked_seed_with_retention_wrapped(seed_id){
+            return balance - locked_seed.balance;
+        }
+        balance
+    }
+
+    pub fn get_balance(&self, seed_id: &SeedId) -> Balance {
+        self.seeds.get(seed_id).unwrap_or(&0).clone()
+    }
+
+    pub fn get_locked_balance(&self, seed_id: &SeedId) -> Balance {
+        let default_locked_seed = LockedSeed::default();
+        let locked_seed = self.locked_seeds.get(seed_id).unwrap_or(&default_locked_seed);
+        locked_seed.balance
+    }
+
+    pub fn add_or_create_locked_seed(&mut self, seed_id: &SeedId, balance: Balance, started_at: TimestampSec, ended_at: TimestampSec){
+        let mut locked_seed = LockedSeed{
+            balance,
+            started_at,
+            ended_at
+        };
+
+        if let Some(current_locked_seed) = self.get_locked_seed_with_retention_wrapped(seed_id){
+            locked_seed.balance += current_locked_seed.balance;
+        } 
+
+        self.locked_seeds.insert(seed_id.clone(), locked_seed);
+    }
+
+    /// get locked seed with retention tolerance
+    pub fn get_locked_seed_with_retention_wrapped(&self, seed_id: &SeedId) -> Option<&LockedSeed>{
+        let current_block_time = to_sec(env::block_timestamp());
+        if let Some(locked_seed) = self.locked_seeds.get(seed_id){
+            let ended_at_tolerance = locked_seed.ended_at + LOCKED_SEED_RETENTION;
+            if current_block_time > ended_at_tolerance{
+                return None;
+            }
+            return Some(locked_seed);
+        }
+        None
+    }
+
+    pub fn delete_expired_locked_seed(&mut self, seed_id: &SeedId){
+        let current_block_time = to_sec(env::block_timestamp());
+        if let Some(locked_seed) = self.locked_seeds.get(seed_id){
+            let ended_at_tolerance = locked_seed.ended_at + LOCKED_SEED_RETENTION;
+            if current_block_time > ended_at_tolerance{
+                self.locked_seeds.remove(seed_id);
+            }
+        }
+    }
 }
 
 
@@ -152,15 +285,16 @@ impl Farmer {
 /// each function of this enum should be carefully re-code!
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedFarmer {
-    V101(Farmer),
+    V101(FarmerV101),
+    V102(Farmer),
 }
 
 impl VersionedFarmer {
 
     pub fn new(farmer_id: AccountId, amount: Balance) -> Self {
-        VersionedFarmer::V101(Farmer {
+        VersionedFarmer::V102(Farmer {
             farmer_id: farmer_id.clone(),
-            amount: amount,
+            amount,
             rewards: HashMap::new(),
             seeds: HashMap::new(),
             user_rps: LookupMap::new(StorageKeys::UserRps {
@@ -168,13 +302,17 @@ impl VersionedFarmer {
             }),
             rps_count: 0,
             nft_seeds: HashMap::new(),
+            locked_seeds: HashMap::new()
         })
     }
 
     /// Upgrades from other versions to the currently used version.
     pub fn upgrade(self) -> Self {
         match self {
-            VersionedFarmer::V101(farmer) => VersionedFarmer::V101(farmer),
+            VersionedFarmer::V101(farmer_v101) => {
+                VersionedFarmer::V102(Farmer::from(farmer_v101))
+            },
+            VersionedFarmer::V102(farmer) => VersionedFarmer::V102(farmer),
         }
     }
 
@@ -182,7 +320,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn need_upgrade(&self) -> bool {
         match self {
-            VersionedFarmer::V101(_) => false,
+            VersionedFarmer::V102(_) => false,
             _ => true,
         }
     }
@@ -191,7 +329,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get_ref(&self) -> &Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
@@ -200,7 +338,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get(self) -> Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }
@@ -209,7 +347,7 @@ impl VersionedFarmer {
     #[allow(unreachable_patterns)]
     pub fn get_ref_mut(&mut self) -> &mut Farmer {
         match self {
-            VersionedFarmer::V101(farmer) => farmer,
+            VersionedFarmer::V102(farmer) => farmer,
             _ => unimplemented!(),
         }
     }

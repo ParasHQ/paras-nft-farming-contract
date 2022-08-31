@@ -157,3 +157,7 @@ pub fn get_nft_balance_equivalent(
 
     return result;
 }
+
+pub fn is_paras_farming_mainnet() -> bool{
+    env::current_account_id() == "staking.paras.near"
+}

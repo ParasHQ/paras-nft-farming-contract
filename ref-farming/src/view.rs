@@ -49,6 +49,14 @@ pub struct FarmInfo {
     pub beneficiary_reward: U128,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LockedSeed {
+    pub balance: U128,
+    pub started_at: u32,
+    pub ended_at: u32 
+}
+
 impl From<&Farm> for FarmInfo {
     fn from(farm: &Farm) -> Self {
         let farm_kind = farm.kind();
@@ -253,6 +261,31 @@ impl Contract {
                 .seeds
                 .into_iter()
                 .map(|(seed, bal)| (seed.clone(), U128(bal)))
+                .collect()
+        } else {
+            HashMap::new()
+        }
+    }
+
+    pub fn list_user_locked_seeds(&self, account_id: ValidAccountId) -> HashMap<SeedId, LockedSeed> {
+        if let Some(farmer) = self.get_farmer_wrapped(account_id.as_ref()) {
+            farmer
+                .get()
+                .locked_seeds
+                .into_iter()
+                .filter(|(seed, _)| {
+                    let farmer = self.get_farmer(&account_id.as_ref());
+                    farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed).is_some()
+                })
+                .map(|(seed, _)| {
+                    let farmer = self.get_farmer(&account_id.as_ref());
+                    let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed).unwrap();
+                    (seed, LockedSeed{
+                        balance: locked_seed.balance.into(),
+                        started_at: locked_seed.started_at,
+                        ended_at: locked_seed.ended_at
+                    })
+                })
                 .collect()
         } else {
             HashMap::new()

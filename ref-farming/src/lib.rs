@@ -32,6 +32,7 @@ mod actions_of_farm;
 mod actions_of_seed;
 mod actions_of_reward;
 mod view;
+mod event;
 
 mod owner;
 

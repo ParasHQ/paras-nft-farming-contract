@@ -1,9 +1,11 @@
 
+use std::collections::HashMap;
 use std::convert::TryInto;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance, PromiseResult};
 
-use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent};
+use crate::event::{NearEvent, UnlockFTBalanceData, LockFTBalanceData};
+use crate::utils::{assert_one_yocto, ext_multi_fungible_token, ext_fungible_token, ext_non_fungible_token, ext_self, wrap_mft_token_id, parse_seed_id, GAS_FOR_FT_TRANSFER, GAS_FOR_RESOLVE_TRANSFER, GAS_FOR_NFT_TRANSFER, FT_INDEX_TAG, get_nft_balance_equivalent, to_sec, is_paras_farming_mainnet};
 use crate::errors::*;
 use crate::farm_seed::SeedType;
 use crate::*;
@@ -101,6 +103,66 @@ impl Contract {
                     ));
             }
         }
+    }
+
+    #[payable]
+    pub fn lock_ft_balance(&mut self, seed_id: SeedId, amount: U128, duration: u32){
+        assert_one_yocto();
+        self.internal_validate_lock_ft_balance_duration(&duration);
+
+        let sender_id = &env::predecessor_account_id();
+        self.internal_lock_ft_balance(&seed_id, sender_id, &amount.into(), &duration);
+
+        let farmer = self.get_farmer(&sender_id);
+        let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
+        NearEvent::log_lock_ft_balance(LockFTBalanceData{
+            account_id: sender_id.to_string(),
+            seed_id: seed_id.to_string(),
+            amount: amount.0.to_string(),
+            duration,
+            started_at: locked_seed.started_at,
+            ended_at: locked_seed.ended_at,
+        });
+    }
+
+    #[payable]
+    pub fn unlock_ft_balance(&mut self, seed_id: SeedId, amount: U128, duration: Option<u32>){
+        assert_one_yocto();
+        let sender_id = &env::predecessor_account_id();
+        
+
+        // if the duration is specified then relock the rest of the locked balance to new periode
+        if let Some(duration_value) = duration{
+            self.internal_validate_lock_ft_balance_duration(&duration_value);
+
+            let farmer = self.get_farmer(&sender_id);
+            let locked_seed = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id).unwrap();
+
+            self.internal_unlock_ft_balance(sender_id, &seed_id, &locked_seed.balance);
+            if locked_seed.balance != amount.into(){
+                let relock_amount = locked_seed.balance - amount.0;
+                self.internal_lock_ft_balance(&seed_id, sender_id, &relock_amount.into(), &duration_value);
+            }
+        } else {
+            self.internal_unlock_ft_balance(sender_id, &seed_id, &amount.into());
+        }
+
+        let farmer = self.get_farmer(&sender_id);
+        let mut log_unlock_ft_balance_data = UnlockFTBalanceData{
+            account_id: sender_id.to_string(),
+            seed_id: seed_id.to_string(),
+            amount: amount.0.to_string(),
+            duration,
+            started_at: None,
+            ended_at: None
+        };
+        // log new period when the locked stake is extended
+        if let Some(locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(&seed_id){
+            log_unlock_ft_balance_data.started_at = Some(locked_seed.started_at);
+            log_unlock_ft_balance_data.ended_at = Some(locked_seed.ended_at);
+        }
+
+        NearEvent::log_unlock_ft_balance(log_unlock_ft_balance_data);
     }
 
     #[private]
@@ -291,6 +353,16 @@ impl Contract {
         }
     }
 
+    #[inline]
+    pub(crate) fn is_seed_type(&self, seed_id: &String, seed_type: SeedType) -> bool {
+        if let Some(farm_seed) = self.data().seeds.get(seed_id) {
+            if farm_seed.get_ref().seed_type == seed_type{
+                return true
+            }
+        }
+        return false
+    }
+
     pub(crate) fn internal_seed_deposit(
         &mut self, 
         seed_id: &String, 
@@ -362,6 +434,19 @@ impl Contract {
         };
     }
 
+    fn internal_validate_lock_ft_balance_duration(&self, duration: &u32){
+        // ignore when the contract is not deployed on paras farming mainnet
+        if !is_paras_farming_mainnet(){
+            return
+        }
+
+        let mut valid_durations_map = HashMap::new(); 
+        valid_durations_map.insert(60 * 60 * 24 * 30, true); // 30 days
+        valid_durations_map.insert(60 * 60 * 24 * 90, true); // 90 days
+
+        assert!(*valid_durations_map.get(duration).unwrap_or(&false), "{}", ERR401_LOCK_FT_BALANCE_DURATION_IS_NOT_VALID);
+    }
+
     fn internal_seed_withdraw(
         &mut self, 
         seed_id: &SeedId, 
@@ -377,7 +462,9 @@ impl Contract {
 
         // Then update user seed and total seed of this LPT
         let farmer_seed_remain = farmer.get_ref_mut().sub_seed(seed_id, amount);
-        let _seed_remain = farm_seed.get_ref_mut().sub_amount(amount);
+        farm_seed.get_ref_mut().sub_amount(amount);
+
+        farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
 
         if farmer_seed_remain == 0 {
             // remove farmer rps of relative farm
@@ -494,4 +581,45 @@ impl Contract {
         contract_nft_token_id
     }
 
+
+    pub fn internal_lock_ft_balance(&mut self, seed_id: &SeedId, sender_id: &AccountId, amount: &Balance, duration: &u32){
+        let current_block_time = to_sec(env::block_timestamp());
+        let ended_at = current_block_time + duration;
+
+        assert!(self.is_seed_type(&seed_id, SeedType::FT), "{}", ERR36_SEED_TYPE_IS_NOT_FT);
+
+        let mut farmer = self.get_farmer(&sender_id);
+        
+        let user_balance = &farmer.get_ref().get_available_balance(&seed_id);
+        assert!(user_balance >= &amount, "{}", ERR37_BALANCE_IS_NOT_ENOUGH);
+
+        if let Some(previous_locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
+            assert!(previous_locked_seed.ended_at <= ended_at, "{}", ERR38_END_OF_DURATION_IS_LESS_THAN_ENDED_AT);
+        } 
+
+        farmer.get_ref_mut().add_or_create_locked_seed(&seed_id, *amount, current_block_time, ended_at);
+        self.data_mut().farmers.insert(&sender_id, &farmer);
+    }
+
+
+    pub fn internal_unlock_ft_balance(&mut self, sender_id: &AccountId, seed_id: &SeedId, amount: &Balance){
+        assert_one_yocto();
+
+        let current_block_time = to_sec(env::block_timestamp());
+
+        assert!(self.is_seed_type(&seed_id, SeedType::FT), "{}", ERR36_SEED_TYPE_IS_NOT_FT);
+
+        let mut farmer = self.get_farmer(&sender_id);
+        if let Some(locked_seed) = farmer.get_ref().get_locked_seed_with_retention_wrapped(seed_id){
+            assert!(locked_seed.ended_at <= current_block_time, "{}", ERR39_USER_CANNOT_UNLOCK_SEED);
+
+            farmer.get_ref_mut().sub_locked_seed_balance(seed_id, *amount);
+            self.data_mut().farmers.insert(&sender_id, &farmer);
+        } else {
+            farmer.get_ref_mut().delete_expired_locked_seed(seed_id);
+            self.data_mut().farmers.insert(&sender_id, &farmer);
+
+            env::panic(format!("{}", ERR40_USER_DOES_NOT_HAVE_LOCKED_SEED).as_bytes());
+        }
+    }
 }
